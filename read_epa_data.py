@@ -54,9 +54,19 @@ if __name__ == "__main__":
             try:
                 pivot = df_current.pivot(index='Datetime Local', columns='County-Site Code',
                                          values='Sample Measurement')
-                pivot.plot()
-                plt.title(state[1])
-                plt.ylabel("{} [{}]".format(param[1],param[2]))
+
+                fig = plt.gcf()
+                fig.set_size_inches(12, 7)
+                ax1 = plt.subplot2grid((1, 3), (0, 0), colspan=2)
+                pivot.plot(ax=ax1)
+                ax1.set_title(state[1])
+                ax1.set_ylabel("{} [{}]".format(param[1],param[2]))
+
+                ax2 = plt.subplot2grid((1, 3), (0, 2))
+                pivot.plot.hist(alpha=0.5, ax=ax2)
+
+
                 plt.show()
+
             except Exception as e:
                 print('Exception: {}'.format(e))
