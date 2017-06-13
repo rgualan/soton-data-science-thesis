@@ -99,3 +99,15 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Data
+.data
+
+# Rstudio
+*.Rproj
+.Rproj.user/**
+.Rhistory
+.RData
+.DS_Store
+.Rbuildignore
+
