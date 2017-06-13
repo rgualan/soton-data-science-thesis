@@ -101,7 +101,10 @@ ENV/
 .mypy_cache/
 
 # Data
-.data
+/data/
+
+#PyCharm
+.idea
 
 # Rstudio
 *.Rproj
