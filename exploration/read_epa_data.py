@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 def read_dataframe():
     # Read input file
     # Criteria Gasses
-    df = pd.read_csv('data/epa_hourly/hourly_42101_2017_co.csv')
+    # df = pd.read_csv('data/epa_hourly/hourly_42101_2017_co.csv')
     # df = pd.read_csv('data/epa_hourly/hourly_44201_2017_ozone.csv')
     # df = pd.read_csv('data/epa_hourly/hourly_42401_2017_so2.csv')
     # df = pd.read_csv('data/epa_hourly/hourly_42602_2017_no2.csv')
     # Particulates
-    # df = pd.read_csv('data/epa_hourly/hourly_81102_2017_pm10.csv')
+    df = pd.read_csv('data/epa_hourly/hourly_81102_2017_pm10.csv')
     # Meteorological
     # df = pd.read_csv('data/epa_hourly/hourly_WIND_2017.csv')
     # df = pd.read_csv('data/epa_hourly/hourly_TEMP_2017.csv')
@@ -65,7 +65,7 @@ if __name__ == "__main__":
                 ax2 = plt.subplot2grid((1, 3), (0, 2))
                 pivot.plot.hist(alpha=0.5, ax=ax2)
 
-
+                fig.tight_layout()
                 plt.show()
 
             except Exception as e:
