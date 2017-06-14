@@ -14,7 +14,8 @@ COL_UNITS = ["knots","degrees","knots","degrees C","degrees C","millibars","metr
 def read_dataframe(index):
     # Read input file
     # Bramblemet
-    df = pd.read_csv('../data/bramblemet/{}.csv'.format(SITE_NAMES[index]))
+    df = pd.read_csv('../data/bramblemet/{}.csv'.format(SITE_NAMES[index]),
+                     low_memory=False)
 
     # Parse Date Local
     df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'],
