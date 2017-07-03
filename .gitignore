@@ -114,3 +114,4 @@ ENV/
 .DS_Store
 .Rbuildignore
 
+.Rproj.user
