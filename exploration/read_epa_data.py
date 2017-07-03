@@ -10,7 +10,8 @@ def read_dataframe():
     # df = pd.read_csv('data/epa_hourly/hourly_42401_2017_so2.csv')
     # df = pd.read_csv('data/epa_hourly/hourly_42602_2017_no2.csv')
     # Particulates
-    df = pd.read_csv('data/epa_hourly/hourly_81102_2017_pm10.csv')
+    df = pd.read_csv('data/epa_hourly/hourly_81102_2016_pm10.csv')
+
     # Meteorological
     # df = pd.read_csv('data/epa_hourly/hourly_WIND_2017.csv')
     # df = pd.read_csv('data/epa_hourly/hourly_TEMP_2017.csv')
@@ -59,7 +60,7 @@ if __name__ == "__main__":
                 fig.set_size_inches(12, 7)
                 ax1 = plt.subplot2grid((1, 3), (0, 0), colspan=2)
                 pivot.plot(ax=ax1)
-                ax1.set_title(state[1])
+                ax1.set_title("{} ({})".format(state[1],state[0]))
                 ax1.set_ylabel("{} [{}]".format(param[1],param[2]))
 
                 ax2 = plt.subplot2grid((1, 3), (0, 2))
