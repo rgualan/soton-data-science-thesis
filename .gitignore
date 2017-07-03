@@ -115,3 +115,5 @@ ENV/
 .Rbuildignore
 
 .Rproj.user
+
+tutorials/
