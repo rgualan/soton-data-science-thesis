@@ -1,6 +1,6 @@
 library("spTimer")
 
-# Old graphic configuration
+# (Save) old graphic configuration
 .pardefault <- par(no.readonly = T)
 
 # Read data
