@@ -36,7 +36,7 @@ DataValPred <- subset(DataValPred, with(DataValPred, !(Day %in% c(30, 31) & Mont
 
 # Create an alternative dataset and inject noise 
 NYdataNoise <- NYdata
-noiseProportion <- 1/2
+noiseProportion <- 1/5
 NYdataNoise$o8hrmax <- NYdata$o8hrmax + 
   rnorm(nrow(NYdata), mean=0, sd=sd(NYdata$o8hrmax, na.rm = T)*noiseProportion)
 NYdataNoise$cMAXTMP <- NYdata$cMAXTMP + 
