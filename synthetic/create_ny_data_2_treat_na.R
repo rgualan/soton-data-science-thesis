@@ -9,8 +9,6 @@ library(spdep)
 
 # Load pseudo-locations of the cheap sensors
 load(file="data/ny_ozone/NYdata.Rdata")
-load(file="data/ny_ozone/lcsCoords.Rdata")
-
 
 #### Fill NA data #########################################################################
 # Algorithm:

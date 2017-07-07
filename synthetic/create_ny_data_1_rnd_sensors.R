@@ -27,18 +27,16 @@ nyPoly <- map2SpatialPolygons(nyMap, IDs=IDs, proj4string=CRS("+proj=longlat +da
 nPoints <- 50
 # plot(nyPoly)
 # points(spsample(nyPoly, n = nPoints, "regular"), pch = 3)
-# plot(nyPoly)
 # points(spsample(nyPoly, n = nPoints, "random"), pch = 3)
-# plot(nyPoly)
 # points(spsample(nyPoly, n = nPoints, "stratified"), pch = 3)
-# plot(nyPoly)
 # points(spsample(nyPoly, n = nPoints, "nonaligned"), pch = 3)
 
-set.seed(999)
+set.seed(444)
 plot(nyPoly)
-lcsCoords <- spsample(nyPoly, n = nPoints, "nonaligned")
-points(lcsCoords, pch = 3)
-save(lcsCoords, file="data/ny_ozone/lcsCoords.Rdata")
+NYcheapLoc <- spsample(nyPoly, n = nPoints, "nonaligned")
+NYcheapLoc$s.index <- 100:(100+length(NYcheapLoc)-1)
+points(NYcheapLoc, pch = 3)
+save(NYcheapLoc, file="data/ny_ozone/NYcheapLoc.Rdata")
 
 # References (again)
 points(coords, pch = 19, col = 3)
