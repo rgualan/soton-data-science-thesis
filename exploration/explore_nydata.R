@@ -9,6 +9,7 @@ library(spTimer)
 
 #### Read data and calculate basic fields ################################################
 data("NYdata")
+load(file="data/ny_ozone/NYcheapLoc.Rdata")
 
 # New fields
 NYdata$date <- as.POSIXct(strptime( sprintf("%04d-%02d-%02d",NYdata$Year,NYdata$Month,NYdata$Day),
@@ -21,6 +22,7 @@ readline("Continue?")
 
 # Save to file for future reference
 save(NYdata, file="data/ny_ozone/NYdata.Rdata")
+
 
 #### NY map plus stations ################################################################
 coords <- as.matrix(unique(cbind(NYdata[, 2:3])))
@@ -38,10 +40,33 @@ par(.pardefault)
 
 #### Only stations ######################################################
 stations <- unique(NYdata[,c("s.index", "Longitude", "Latitude")])
-plot(stations$Longitude, stations$Latitude, pch = 19, col = 3, cex=3, axes=F, xlab="", ylab="", asp=1)
+plot(stations$Longitude, stations$Latitude, pch = 19, col = "lightgreen", cex=3, axes=F, xlab="", ylab="", asp=1)
 points(stations$Longitude, stations$Latitude, pch = 1, col = 1, cex=3)
 text(stations$Longitude, stations$Latitude, stations$s.index, cex=1) #pos=3
 #with(stations[stations$s.index==12,], text(Longitude+0.3, Latitude, s.index, cex=0.7, col=2))
+readline("Continue?")
+
+
+#### References + Cheap sensors #########################################
+stations <- unique(NYdata[,c("s.index", "Longitude", "Latitude")])
+
+#jpeg('test.jpg')
+plot(stations$Longitude, stations$Latitude, pch = 19, col = "lightgreen", cex=2, 
+     axes=F, xlab="", ylab="", asp=1, ylim=c(min(stations$Latitude),max(stations$Latitude)+0.7))
+points(stations$Longitude, stations$Latitude, pch = 1, col = 1, cex=2)
+text(stations$Longitude, stations$Latitude, stations$s.index, cex=0.7) #pos=3
+
+#Temporal IDS
+#length(NYcheapLoc)
+#NYcheapLoc$ID <- 1:51
+
+points(coordinates(NYcheapLoc)[,1], coordinates(NYcheapLoc)[,2], pch = 19, col = "lightblue", cex=2)
+points(coordinates(NYcheapLoc)[,1], coordinates(NYcheapLoc)[,2], pch = 1, col = 1, cex=2)
+text(coordinates(NYcheapLoc)[,1], coordinates(NYcheapLoc)[,2], NYcheapLoc$s.index, cex=0.6) #pos=3
+
+# dev.copy(png,'myplot.png')
+#dev.off()
+
 readline("Continue?")
 
 
@@ -91,3 +116,9 @@ axis(2)
 for(index in 2:28 ){
   lines(NYdata[NYdata$s.index==index,]$RH, type = "l", col=index)
 }
+
+par(.pardefault)
+
+
+
+
