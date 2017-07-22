@@ -7,7 +7,7 @@ library(maps) # Provides functions that let us plot the maps
 library(mapdata) # Contains the hi-resolution points that mark out the countries.
 
 #### UK plus stations ################################################################
-metadata <- read.delim("data/FR_AQeReporting_2013-2015/FR_2013-2015_metadata.csv", header = T)
+metadata <- read.delim("data/FR_AQeReporting_2013-2015/FR_2013-2015_metadata.csv", header=T)
 metadata$ObservationDateEnd <- as.POSIXct(metadata$ObservationDateEnd,
                                           format="%Y-%m-%d %H:%M:%S",tz = "UTC")
 metadata$ObservationDateBegin <- as.POSIXct(metadata$ObservationDateBegin,
@@ -76,10 +76,18 @@ points(coords[,1:2], pch = 4, col = "orange", cex=0.5)
 par(.pardefault)
 readline("Continue?")
 
+# Stations monitoring only PM10
+st <- tmp3$AirQualityStationEoICode[tmp3$AirPollutant=="O3"]
+coords <- as.matrix(unique(cbind(stations[stations$AirQualityStationEoICode %in% st, 
+                                          c("Longitude","Latitude")])))
+points(coords[,1:2], pch = 4, col = "green", cex=0.5)
+
+
+
 # Time series ###############################################################
 # Read the data
-#d <- read.delim("data/FR_AQeReporting_2013-2015/FR_5_2013-2015_aggregated_timeseries_pm10.csv", header = T)
-d <- read.delim("data/FR_AQeReporting_2013-2015/FR_7_2013-2015_aggregated_timeseries_o3.csv", header = T)
+d <- read.delim("data/FR_AQeReporting_2013-2015/FR_5_2013-2015_aggregated_timeseries_pm10.csv", header = T)
+#d <- read.delim("data/FR_AQeReporting_2013-2015/FR_7_2013-2015_aggregated_timeseries_o3.csv", header = T)
 #d <- read.delim("data/FR_AQeReporting_2013-2015/FR_8_2013-2015_aggregated_timeseries_no2.csv", header = T)
 #str(d)
 d$date <- as.POSIXct(d$DatetimeBegin, format="%Y-%m-%d %H:%M:%S",tz="UTC")
@@ -90,6 +98,15 @@ summaryPlot(d[d$site %in% simpleFilter,
               c("date","site","AirPollutionLevel")])
 #timePlot(d[d$site %in% simpleFilter,], pollutant = "AirPollutionLevel", type="site")
 
+
+# Date range by station
+minDateAgg <- aggregate(date~AirQualityStationEoICode,data=d,FUN=min)
+maxDateAgg <- aggregate(date~AirQualityStationEoICode,data=d,FUN=max)
+rangeDateAgg <- merge(minDateAgg,maxDateAgg,by="AirQualityStationEoICode")
+countStations2014 <- nrow(rangeDateAgg[rangeDateAgg$date.x<="2014-01-01" 
+                                       & rangeDateAgg$date.y>="2014-12-31",])
+countStations2015 <- nrow(rangeDateAgg[rangeDateAgg$date.x<="2015-01-01" 
+                                       & rangeDateAgg$date.y>="2015-12-31",])
 
 
 # # Create image files of the time series plots ##########################################
