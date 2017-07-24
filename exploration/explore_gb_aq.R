@@ -66,45 +66,14 @@ par(.pardefault)
 
 # Time series ###############################################################
 # Read the data
-#d <- read.delim("data/GB_AQeReporting_2013-2015/GB_1_2013-2015_aggregated_timeseries.csv", header = T)
-d <- read.delim("data/GB_AQeReporting_2013-2015/GB_5_2013-2015_aggregated_timeseries.csv", header = T)
-
+#d <- read.delim("data/GB_AQeReporting_2013-2015/GB_1_2013-2015_aggregated_timeseries_so2.csv", header = T)
+d <- read.delim("data/GB_AQeReporting_2013-2015/GB_5_2013-2015_aggregated_timeseries_pm10.csv", header = T)
+d <- d[d$DataAggregationProcess=="P1D",]
 str(d)
 d$date <- as.POSIXct(d$DatetimeBegin, format="%Y-%m-%d %H:%M:%S",tz="UTC")
 summary(d)
-d$site <- d$AirQualityStationEoICode
-summaryPlot(d[,c("date","site","AirPollutionLevel")])
-timePlot(d[,c("date","site","AirPollutionLevel")], pollutant = "AirPollutionLevel", type="site")
-
-
-
-
-
-
-
-library(ggplot2)
-library(ggmap)
-library(maps)
-library(mapdata)
-
-
-states <- map_data("state")
-arrests <- USArrests
-names(arrests) <- tolower(names(arrests))
-arrests$region <- tolower(rownames(USArrests))
-
-choro <- merge(states, arrests, sort = FALSE, by = "region")
-choro <- choro[order(choro$order), ]
-ggplot(choro, aes(long, lat)) +
-  geom_polygon(aes(group = group, fill = assault)) +
-  coord_map("albers",  at0 = 45.5, lat1 = 29.5)
-
-ggplot(choro, aes(long, lat)) +
-  geom_polygon(aes(group = group, fill = assault / murder)) +
-  coord_map("albers",  at0 = 45.5, lat1 = 29.5)
-
-
-map <- get_map(location='united kingdom', zoom=5, maptype = "terrain",
-               source='osm',color='color')
-ggmap(map)
-
+d$site <- as.factor(d$AirQualityStationEoICode)
+summaryPlot(d[d$site %in% head(unique(d$site)), c("date","site","AirPollutionLevel")],
+            pollutant = "AirPollutionLevel", type="site")
+# timePlot(d[d$site %in% head(unique(d$site)), c("date","site","AirPollutionLevel")], 
+#          pollutant = "AirPollutionLevel", type="site")

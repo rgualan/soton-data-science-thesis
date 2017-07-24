@@ -1,5 +1,10 @@
+# Clean environment
+rm(list=ls())
+
+# Import libraries
 library(maps)
 library(openair)
+library(sp)
 library(spTimer)
 
 
@@ -10,8 +15,6 @@ library(spTimer)
 #### Read data and calculate basic fields ################################################
 data("NYdata")
 load(file="data/ny_ozone/NYcheapLoc.Rdata")
-
-# New fields
 NYdata$date <- as.POSIXct(strptime( sprintf("%04d-%02d-%02d",NYdata$Year,NYdata$Month,NYdata$Day),
                                     format="%Y-%m-%d", tz="GMT"))
 #coordinates(NYdata) <- ~Longitude+Latitude
@@ -22,6 +25,7 @@ readline("Continue?")
 
 # Save to file for future reference
 save(NYdata, file="data/ny_ozone/NYdata.Rdata")
+
 
 
 #### NY map plus stations ################################################################
@@ -38,6 +42,8 @@ readline("Continue?")
 
 par(.pardefault)
 
+
+
 #### Only stations ######################################################
 stations <- unique(NYdata[,c("s.index", "Longitude", "Latitude")])
 plot(stations$Longitude, stations$Latitude, pch = 19, col = "lightgreen", cex=3, axes=F, xlab="", ylab="", asp=1)
@@ -45,6 +51,7 @@ points(stations$Longitude, stations$Latitude, pch = 1, col = 1, cex=3)
 text(stations$Longitude, stations$Latitude, stations$s.index, cex=1) #pos=3
 #with(stations[stations$s.index==12,], text(Longitude+0.3, Latitude, s.index, cex=0.7, col=2))
 readline("Continue?")
+
 
 
 #### References + Cheap sensors #########################################
@@ -68,6 +75,7 @@ text(coordinates(NYcheapLoc)[,1], coordinates(NYcheapLoc)[,2], NYcheapLoc$s.inde
 #dev.off()
 
 readline("Continue?")
+
 
 
 ##### Time series #####

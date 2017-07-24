@@ -15,4 +15,3 @@ d$var <- d$Sample.Measurement
 simpleFilter <- head(unique(d$site))
 summaryPlot(d[d$site %in% simpleFilter,c("date","site","var")], type="site")
 
-

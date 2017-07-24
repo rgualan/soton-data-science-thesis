@@ -17,6 +17,7 @@ library(rgdal)
 d <- read.delim("data/FR_AQeReporting_2013-2015/FR_5_2013-2015_aggregated_timeseries_pm10.csv", header=T)
 d$DatetimeBegin <- as.POSIXct(d$DatetimeBegin, format="%Y-%m-%d %H:%M:%S",tz="UTC")
 d$DatetimeEnd <- as.POSIXct(d$DatetimeEnd, format="%Y-%m-%d %H:%M:%S",tz="UTC")
+length(unique(d$AirQualityStationEoICode))
 
 ## Filter data to match relevant criteria
 dateA <- as.POSIXct("2015-01-01", format="%Y-%m-%d", tz="UTC")
@@ -45,7 +46,7 @@ stations <- merge(stations,stations_md,all.x=T)
 #View(stations)
 # Remove stations outside continental territory
 stations <- stations[stations$Latitude>40,] 
-
+nrow(stations)
 
 
 # Plot all the active stations
@@ -82,8 +83,11 @@ readline("continue?")
 
 ## Plot map of France and the stations (coloured by type of Area)
 # zoom=6
-map <- get_map(location = 'France', zoom = 6, maptype = "roadmap")
-ggmap(map) +
+#mapFrance <- get_map(location = 'France', zoom = 6, maptype = "roadmap")
+#save(mapFrance, file="data/maps/mapFrance.Rdata")
+if(!exists("mapFrance")) load("data/maps/mapFrance.Rdata")
+
+ggmap(mapFrance) +
   geom_point(aes(x=Longitude, y=Latitude, 
                  fill = AirQualityStationArea), 
              data = stations, alpha = .75, shape=21, size=2)
@@ -94,15 +98,18 @@ readline("Continue?")
 # roadmap
 
 ## Plot map of France and the stations (coloured by type of station)
-ggmap(map) +
+ggmap(mapFrance) +
   geom_point(aes(x=Longitude, y=Latitude, 
                  fill = AirQualityStationType), 
              data = stations, alpha = .75, shape=21, size=2)
 readline("Continue?")
 
 ## Plot map of Paris and the stations
-map <- get_map(location = 'Paris', zoom = "auto", maptype="roadmap")
-ggmap(map) +
+#mapParis <- get_map(location = 'Paris', zoom = "auto", maptype="roadmap")
+#save(mapParis, file="data/maps/mapParis.Rdata")
+if(!exists("mapParis")) load("data/maps/mapParis.Rdata")
+
+ggmap(mapParis) +
   geom_point(aes(x=Longitude, y=Latitude, fill = AirQualityStationArea), 
              data = stations, alpha = .75, shape=21, size=2)
 readline("Continue?")

@@ -1,12 +1,13 @@
 # Clean environment #################################################################
 rm(list=ls())
+.pardefault <- par(no.readonly=T)
 
 # Libraries
 library(openair)
 library(maps) # Provides functions that let us plot the maps
 library(mapdata) # Contains the hi-resolution points that mark out the countries.
 
-#### UK plus stations ################################################################
+#### France plus stations ################################################################
 metadata <- read.delim("data/FR_AQeReporting_2013-2015/FR_2013-2015_metadata.csv", header=T)
 metadata$ObservationDateEnd <- as.POSIXct(metadata$ObservationDateEnd,
                                           format="%Y-%m-%d %H:%M:%S",tz = "UTC")
