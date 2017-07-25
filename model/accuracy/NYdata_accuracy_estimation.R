@@ -1,18 +1,23 @@
+## Clean environment
+rm(list=ls())
+
+## Load libraries
 library(sp)
 
-
+## Load dataset
 load("data/ny_ozone/NYdata.Rdata")
 load("data/ny_ozone/NYcheap.Rdata")
 load("data/ny_ozone/NYcheapPlusNoise.Rdata")
 
 
-# Visualize error histogram
+## Visualize error histogram
 NYerror <- NYcheap[, c("s.index", "date")]
 NYerror$error <- NYcheapPlusNoise$o8hrmax - NYcheap$o8hrmax
 hist(NYerror$error[NYerror$s.index==100])
 readline("Continue?")
 
-# Calculate BIAS
+
+## Calculate BIAS
 NYerrorAgg <- aggregate(cbind(NYerror$error)~NYerror$s.index
                         +NYerror@coords[,1]+NYerror@coords[,2],  
                         FUN=mean)

@@ -1,6 +1,9 @@
-library("spTimer")
+## Clean environment
+rm(list=ls())
 
-# These packages will be required to run the code in this file
+## Load libraries
+library("spTimer")
+## These packages will be required to run the code in this file
 library("akima")
 library("coda")
 library("spacetime")
@@ -14,6 +17,7 @@ library("maps")
 library("MBA")
 library("openair")
 
+## Begin
 start.time <- Sys.time()
 .pardefault <- par(no.readonly = T)
 
@@ -68,9 +72,10 @@ NYdataNoise$date <- as.POSIXct(strptime( sprintf("%04d-%02d-%02d",NYdataNoise$Ye
                                     format="%Y-%m-%d", tz="GMT"))
 summaryPlot(NYdata[,c(-1:-6)], period = "months")
 summaryPlot(NYdataNoise[,c(-1:-6)], period = "months")
+readline("Continue?")
 
 
-# Figure 7
+## Figure 7
 coords <- as.matrix(unique(cbind(DataFit[, 2:3])))
 pred.coords <- as.matrix(unique(cbind(DataValPred[, 2:3])))
 map(database = "state", regions = "new york")

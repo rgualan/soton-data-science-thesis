@@ -1,6 +1,9 @@
-library("spTimer")
+## Clean environment
+rm(list=ls())
 
-# These packages will be required to run the code in this file
+## Load libraries
+library("spTimer")
+## These packages will be required to run the code in this file
 library("akima")
 library("coda")
 library("spacetime")
@@ -37,6 +40,7 @@ DataValPred <- subset(DataValPred, with(DataValPred, !(Day %in% c(30, 31) & Mont
 NYdata$date <- as.POSIXct(strptime( sprintf("%04d-%02d-%02d",NYdata$Year,NYdata$Month,NYdata$Day),
                                     format="%Y-%m-%d", tz="GMT"))
 summaryPlot(NYdata[,c(-1:-6)], period = "months")
+readline("Continue?")
 
 
 # Figure 7

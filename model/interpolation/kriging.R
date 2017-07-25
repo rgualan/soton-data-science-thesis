@@ -1,8 +1,12 @@
+## Clean environment
+rm(list=ls())
+
+## Load libraries
 library(sp)
 library(gstat)
+library(spTimer)
 
-# Dataset
-# packages for manipulation & visualization
+## Packages for manipulation & visualization
 suppressPackageStartupMessages({
   library(dplyr) # for "glimpse"
   library(ggplot2)
@@ -10,6 +14,7 @@ suppressPackageStartupMessages({
   library(magrittr)
 })
 
+## Load datasets
 data(NYdata)
 glimpse(NYdata)
 
@@ -27,8 +32,11 @@ lzn.vgm <- variogram(log(o8hrmax)~1, NYdataAgg) # calculates sample variogram va
 lzn.fit <- fit.variogram(lzn.vgm, model=vgm(1, "Sph")) # fit model
 plot(lzn.vgm, lzn.fit) # plot the sample values, along with the fit model
 
+
+
 #### Performing Kriging ####
 # load spatial domain to interpolate over
+data("meuse")
 data("meuse.grid")
 
 # to compare, recall the bubble plot above; those points were what there were values for. this is much more sparse

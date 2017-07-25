@@ -1,7 +1,11 @@
+## Clean environment
+rm(list=ls())
+
+## Load libraries
 library(automap)
 library(spTimer)
 
-# packages for manipulation & visualization
+## packages for manipulation & visualization
 suppressPackageStartupMessages({
   library(dplyr) # for "glimpse"
   library(ggplot2)
@@ -10,19 +14,19 @@ suppressPackageStartupMessages({
 })
 
 #### Very basic example ####
-loadMeuse()
-# Ordinary kriging
-kriging_result = autoKrige(zinc~1, meuse, meuse.grid)
-plot(kriging_result)
-# Universal kriging
-kriging_result = autoKrige(zinc~soil+ffreq+dist, meuse, meuse.grid)
-plot(kriging_result)
+# loadMeuse()
+# # Ordinary kriging
+# kriging_result = autoKrige(zinc~1, meuse, meuse.grid)
+# plot(kriging_result)
+# # Universal kriging
+# kriging_result = autoKrige(zinc~soil+ffreq+dist, meuse, meuse.grid)
+# plot(kriging_result)
 
 
 #### Automap - kriging ####
 # NYdata ####
-data(NYdata)
-data(NYgrid)
+data("NYdata")
+data("NYgrid")
 
 NYdataAgg <- aggregate(cbind(o8hrmax,cMAXTMP,WDSP,RH)~s.index+Longitude+Latitude, 
                        FUN=mean, data=NYdata)
