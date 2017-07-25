@@ -46,7 +46,9 @@ par(.pardefault)
 
 #### Only stations ######################################################
 stations <- unique(NYdata[,c("s.index", "Longitude", "Latitude")])
-plot(stations$Longitude, stations$Latitude, pch = 19, col = "lightgreen", cex=3, axes=F, xlab="", ylab="", asp=1)
+map(database = "state", regions = "new york", mar=par("mar"))
+#plot(stations$Longitude, stations$Latitude, pch = 19, col = "lightgreen", cex=3, axes=F, xlab="", ylab="", asp=1)
+points(stations$Longitude, stations$Latitude, pch = 19, col = "lightgreen", cex=3, axes=F, xlab="", ylab="", asp=1)
 points(stations$Longitude, stations$Latitude, pch = 1, col = 1, cex=3)
 text(stations$Longitude, stations$Latitude, stations$s.index, cex=1) #pos=3
 #with(stations[stations$s.index==12,], text(Longitude+0.3, Latitude, s.index, cex=0.7, col=2))

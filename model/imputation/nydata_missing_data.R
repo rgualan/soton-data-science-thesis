@@ -1,37 +1,69 @@
+## Clean environment
+rm(list=ls())
+
+## Load libraries
 library(openair)
 library(mgcv)
 library(spTimer)
 
-
-# Load pseudo-locations of the cheap sensors
-load(file="data/ny_ozone/NYdata.Rdata")
-load(file="data/ny_ozone/lcsCoords.Rdata")
-
-
-# Experiment:
-# Which is the best method for filling small portions of missing data
+## Load pseudo-locations of the cheap sensors
+#load(file="data/ny_ozone/NYdata.Rdata")
+#load(file="data/ny_ozone/NYcheapLoc.Rdata")
+data("NYdata")
+NYdata$date <- as.POSIXct(strptime( sprintf("%04d-%02d-%02d",NYdata$Year,NYdata$Month,NYdata$Day),
+                                    format="%Y-%m-%d", tz="GMT"))
 
 
 ## Deal with missing data ########################################################
+## Which is the best method for filling small portions of missing data 
+
+## How much missing data are we dealing with?
 sum(is.na(NYdata$o8hrmax))
+nasByStation <- aggregate(o8hrmax~s.index,data=NYdata,
+                          FUN=function(x){sum(is.na(x))}, na.action = na.pass)
+#View(nasByStation)
+nasByStation <- nasByStation[order(nasByStation$o8hrmax,decreasing=T),]
+nasByStation[nasByStation$o8hrmax>0,]
+readline("Continue?")
+
+
+## Define train and validation datasets
 trainDs <- na.omit(NYdata)
 summaryPlot(trainDs[,c("o8hrmax","cMAXTMP","WDSP","RH","date")], period="months")
+readline("Continue?")
 
 
 ## Approach1: create a general model ########################################################
 
 ## Linear models
 simpleLm <- lm(o8hrmax~cMAXTMP+WDSP+RH, data=trainDs)
-#View(data.frame(trainDs$o8hrmax, fitted(simpleLm), predict(simpleLm)))
-plot(trainDs$o8hrmax, type="l")
-lines(predict(simpleLm), col=2)
-spT.validation(trainDs$o8hrmax, predict(simpleLm))
-cor(predict(simpleLm), trainDs$o8hrmax)^2
 simpleLm2 <- lm(o8hrmax~cMAXTMP+WDSP+RH+Day, data=trainDs)
-spT.validation(trainDs$o8hrmax, predict(simpleLm2))
 simpleLm3 <- lm(o8hrmax~cMAXTMP+WDSP+RH+Longitude*Latitude+Month, data=trainDs)
-spT.validation(trainDs$o8hrmax, predict(simpleLm3))
-#summary(simpleLm3)
+plot(trainDs$o8hrmax, type="l", ylab="Ozone")
+lines(predict(simpleLm), col=2, cex=0.5)
+lines(predict(simpleLm2), col=3)
+lines(predict(simpleLm3), col=4)
+# summary(simpleLm3)
+# Some metrics
+vlm1 <- spT.validation(trainDs$o8hrmax, predict(simpleLm))
+vlm2 <- spT.validation(trainDs$o8hrmax, predict(simpleLm2))
+vlm3 <- spT.validation(trainDs$o8hrmax, predict(simpleLm3))
+r2lm1 <- cor(predict(simpleLm), trainDs$o8hrmax)^2
+r2lm2 <- cor(predict(simpleLm2), trainDs$o8hrmax)^2
+r2lm3 <- cor(predict(simpleLm3), trainDs$o8hrmax)^2
+vlm <- rbind(vlm1,vlm2,vlm3)
+vlm <- cbind( vlm, R2=c(r2lm1,r2lm2,r2lm3) )
+vlm
+readline("Continue?")
+
+## Simple plot to compare the linear models
+pds <- NYdata[NYdata$s.index==7,] # prediction dataset
+plot(pds$o8hrmax, type="l", ylab="Ozone", main="Ozone - Station 7", ylim=c(20,75))
+lines(predict(simpleLm,newdata=pds), col=2, cex=0.5)
+lines(predict(simpleLm2,newdata=pds), col=3, cex=0.5)
+lines(predict(simpleLm3,newdata=pds), col=4, cex=0.5)
+readline("Continue?")
+
 
 ## GAM model
 simpleGam <- gam(o8hrmax ~ s(cMAXTMP) + s(WDSP) + s(RH) + s(Longitude, Latitude, k = 10), 
@@ -41,6 +73,7 @@ spT.validation(trainDs$o8hrmax, predict(simpleGam))
 cor(trainDs$o8hrmax, predict(simpleGam))^2
 plot(trainDs$o8hrmax, type="l")
 lines(predict(simpleGam), col=2)
+
 
 ## GP model
 trainDs2 <- NYdata[!(NYdata$s.index %in% unique(NYdata$s.index[is.na(NYdata$o8hrmax)])), ]
@@ -53,33 +86,47 @@ spT.validation(trainDs2$o8hrmax,pred.gp[,1])
 plot(trainDs2$o8hrmax, type="l")
 lines(pred.gp[,1], col=2)
 
-# Comparison
-a <- spT.validation(trainDs$o8hrmax, predict(simpleLm3))
-b <- spT.validation(trainDs$o8hrmax, predict(simpleGam))
-c <- spT.validation(trainDs2$o8hrmax,pred.gp[,1])
-a; b; c;
+## Comparison (all data)
+va <- spT.validation(trainDs$o8hrmax, predict(simpleLm3))
+vb <- spT.validation(trainDs$o8hrmax, predict(simpleGam))
+vc <- spT.validation(trainDs2$o8hrmax,pred.gp[,1])
+vom <- rbind(va,vb,vc)
+vom
+readline("Continue?")
 
-# Grafical comparison in a station
+## Comparison (Station 7)
 testS7 <- NYdata[NYdata$s.index==7, ]
-pred.gp.7 <- predict(simpleGp, newdata=testS7, newcoords = ~Longitude + Latitude)
-spT.validation(testS7$o8hrmax, pred.gp.7$Mean)
-plot(testS7$o8hrmax, type="l")
-abline(v=which(is.na(testS7$o8hrmax)), col="gray", lty="dashed")
+pred.gp.7 <- predict(simpleGp, newdata=testS7, newcoords=~Longitude+Latitude)
+target <- testS7$o8hrmax[testS7$s.index==7]
+va <- spT.validation(target, predict(simpleLm3, newdata=testS7))
+vb <- spT.validation(target, predict(simpleGam, newdata=testS7))
+vc <- spT.validation(target, pred.gp.7$Mean)
+vom7 <- rbind(va,vb,vc)
+vom7
+readline("Continue?")
 
-lines(pred.gp.7$Mean, col=2)
+## Grafical comparison in a station
+spT.validation(testS7$o8hrmax, pred.gp.7$Mean)
+plot(testS7$o8hrmax, type="l", main="Data imputation models for station 7", ylab="Ozone")
+abline(v=which(is.na(testS7$o8hrmax)), col="gray", lty="dashed")
+lines(predict(simpleLm3, newdata = testS7), col=2)
+lines(predict(simpleGam, newdata = testS7), col=3)
+lines(pred.gp.7$Mean, col=4)
 #lines(pred.gp.7$Mean+pred.gp.7$SD, col=3, lty="dashed")
 #lines(pred.gp.7$Mean-pred.gp.7$SD, col=3, lty="dashed")
-lines(predict(simpleLm3, newdata = testS7), col=3)
-lines(predict(simpleGam, newdata = testS7), col=4)
+legend("topright", legend=c("Obs.","GAM","GP"), 
+       lty=rep(1,3), lwd=rep(1,3), col=c(1:3)) # gives the legend lines the correct color and width
+readline("Continue?")
 
-# Observations:
-# The best general model is GP, despite it does not use the data from the station with 
-# missing values
+## Observations:
+## The best general model is GP, despite it does not use the data from the station with 
+## missing values
 
 
-# Approach 2: Create a model tailored for each station with missing values ###############
 
-# Check R2 with neightbour stations
+## Approach 2: Create a model tailored for each station with missing values ###############
+
+## Check R2 with neightbour stations
 cor(NYdata$o8hrmax[NYdata$s.index==7],NYdata$o8hrmax[NYdata$s.index==8],use="pairwise.complete.obs")^2
 cor(NYdata$o8hrmax[NYdata$s.index==7],NYdata$o8hrmax[NYdata$s.index==11],use="pairwise.complete.obs")^2
 cor(NYdata$o8hrmax[NYdata$s.index==7],NYdata$o8hrmax[NYdata$s.index==10],use="pairwise.complete.obs")^2
@@ -108,10 +155,7 @@ cor(NYdata$o8hrmax[NYdata$s.index==7],NYdata$o8hrmax[NYdata$s.index==9],use="pai
 trainDsS7 <- NYdata[NYdata$s.index==7, ]
 trainDsS7$ohrmaxS8 <- NYdata$o8hrmax[NYdata$s.index==8]
 simpleLmS7 <- lm(o8hrmax~cMAXTMP+WDSP+RH+Month+ohrmaxS8, data = trainDsS7)
-spT.validation(trainDsS7$o8hrmax, predict(simpleLmS7, newdata = trainDsS7))
-cor(trainDsS7$o8hrmax, predict(simpleLmS7, newdata = trainDsS7), use="pairwise.complete.obs")
-#plot(trainDsS7$o8hrmax, type="l")
-lines(predict(simpleLmS7, newdata = trainDsS7), col="orange", lwd=2)
+
 
 # # Linear model2
 # trainDsS7$ohrmaxS9 <- NYdata$o8hrmax[NYdata$s.index==9]
@@ -135,15 +179,40 @@ lines(predict(simpleLmS7, newdata = trainDsS7), col="orange", lwd=2)
 # #plot(trainDsS7$o8hrmax, type="l")
 # lines(predict(simpleLmS7c, newdata = trainDsS7), col="purple", lwd=2)
 
-# GP
+## Notes:
+## Posible problem of adding several neighbors: multicollinearity
+
+## GAM
+# trainDsS7_gam <- NYdata[NYdata$s.index %in% c(7,8,9,10), ]
+# simpleGamS7 <- gam(o8hrmax ~ s(cMAXTMP) + s(WDSP) + s(RH) + s(Longitude, Latitude, k = 10), 
+#                  data = trainDsS7_gam)
+## Error with GAM
+## A term has fewer unique covariate combinations than specified maximum degrees of freedom
+
+
+## GP
 trainS7Gp <- NYdata[NYdata$s.index %in% c(8,9,10,11), ]
 modelGpS7 <- spT.Gibbs(formula = o8hrmax ~ cMAXTMP + WDSP + RH, data = trainS7Gp, model = "GP", 
                       coords = ~Longitude + Latitude, scale.transform = "SQRT", 
                       spatial.decay = spT.decay(distribution = Gamm(2, 1), tuning = 0.1))
 pred.gp.S7 <- fitted(modelGpS7)^2
-spT.validation(trainS7Gp$o8hrmax,pred.gp.S7[,1])
-#plot(trainDs2$o8hrmax, type="l")
-lines(pred.gp[,1], col=5)
+
+## Metrics
+t3ValLm <- spT.validation(trainDsS7$o8hrmax, predict(simpleLmS7, newdata = trainDsS7))
+#cor(trainDsS7$o8hrmax, predict(simpleLmS7, newdata = trainDsS7), use="pairwise.complete.obs")
+t3ValGp <- spT.validation(trainS7Gp$o8hrmax,pred.gp.S7[,1])
+t3Val <- rbind(t3ValLm, t3ValGp)
+t3Val
+readline("Continue?")
+
+## Plot 
+plot(trainDsS7$o8hrmax, type="l", main="Station 7", ylab="Ozone", xlim=c(0,70), ylim=c(25,80))
+abline(v=which(is.na(testS7$o8hrmax)), col="gray", lty="dashed")
+lines(predict(simpleLmS7, newdata = trainDsS7), col="orange", lwd=1)
+lines(pred.gp[,1], col="cyan")
+legend("topright", legend=c("Obs.","LM","GP"), 
+       lty=rep(1,3), lwd=rep(1,3), col=c("black", "orange","cyan")) # gives the legend lines the correct color and width
+#readline("Continue?")
 
 
 # Observations:
