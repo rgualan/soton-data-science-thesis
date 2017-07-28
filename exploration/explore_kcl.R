@@ -9,6 +9,7 @@ library(rgeos)
 library(ggmap)
 library(rgdal)
 
+
 ## Stations ###################################################################
 ## Read data
 load("data/kcl/sites.RData")
@@ -57,3 +58,99 @@ met2 <- met[met$date>=dateA & met$date<=dateB,]
 nrow(met2)
 #View(met2)
 summaryPlot(met2, period = "months")
+
+
+
+
+## Create a compact data frame ###################################################
+createCompact = F
+
+if(createCompact){
+  variables <- c("site","date","nox","no2","so2","pm10_raw","pm10","pm25","o3","co","co2")
+  variables2 <- c("site","date","Latitude","Longitude","Classification","nox","no2","so2","pm10_raw","pm10","pm25","o3","co","co2")
+  
+  files <- list.files("data/kcl/2015")
+  for(f in files){
+    print(f)
+    load(paste0("data/kcl/2015/",f))
+    
+    #names(x)
+    names(x) <- sapply(names(x),FUN=tolower)
+    
+    ## Remove irrelevant variables
+    x <- x[ , (names(x) %in% variables)]
+    #names(x)
+    
+    ## Add NA variables
+    for(varName in variables){
+      #cat(varName,"\n")
+      if (!varName %in% names(x)){
+        x$new <- NA
+        names(x)[ncol(x)] <- varName
+      }
+    }
+    #head(x)
+    
+    if(!exists("compact")){
+      compact <- x
+    }else{
+      compact <- rbind(compact,x)  
+    }
+    
+  }
+  
+  ## Merge with stations
+  compact <- merge(compact,
+                    sites[,c("SiteCode","Classification","Latitude","Longitude")],
+                    by.x="site", by.y="SiteCode")
+  
+  ## Save compact dataframe
+  d$site <- as.factor(d$site)
+  compact <- compact[order(compact$site,compact$date),variables2]
+  save(compact, file="data/kcl/compact2015.RData")
+}
+
+
+load("data/kcl/compact2015.RData")
+d <- compact
+
+
+
+## Plot data as a matrix (sites x date) ################
+library(lattice)
+library(RColorBrewer)
+
+st.on <- sort(unique(d$site))
+NS<-50
+
+for(i in 1:ceiling(length(st.on)/50)){
+  cat(i) #i<-1
+  print(levelplot(ozone~date*site, 
+                  d[d$site
+                       %in% st.on[(NS*(i-1)+1):(NS*i)],],
+                  cuts=10,col.regions=rev(brewer.pal(11,"Spectral")),
+                  scales=list(y=list(cex=.7))))
+  readline("Continue?")
+}
+
+
+
+
+# Active stations (by pollutant)
+nasBySite <- aggregate(cbind(no2,pm10)~site,d,FUN=function(x){sum(!is.na(x))}, na.action=na.pass)
+View(nasBySite)
+tot <- as.double(max(d$date)-min(d$date), units="hours")
+nasBySite$no2p <- nasBySite$no2/tot
+nasBySite$pm10p <- nasBySite$pm10/tot
+summaryPlot(d[d$site=="HK6",c("site","date","no2")])
+summaryPlot(d[d$site=="BT4",c("site","date","no2")])
+
+sites.on <- nasBySite$site[nasBySite$no2p>=0.90]
+sites.on <- merge(data.frame(site=sites.on), 
+                  sites[,c("SiteCode","Longitude","Latitude","Classification")], 
+                  by.x="site", by.y="SiteCode")
+nrow(sites.on)
+## 47 for pm10
+## 55 for no2
+plot(Latitude~Longitude,sites.on,pch="|")
+points(Latitude~Longitude,sites.on,pch="2",col="red")
