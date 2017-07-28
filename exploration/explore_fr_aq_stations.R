@@ -8,6 +8,7 @@ library(sp)
 library(rgeos)
 library(ggmap)
 library(rgdal)
+library(lattice) # For levelplot
 
 ## Stations monitoring PM10 near Paris ###########################################
 ## Build the list of active stations starting from the data
@@ -129,4 +130,30 @@ ggplot() +
              aes(x=Longitude, y=Latitude, fill = AirQualityStationArea), 
              alpha = .75, shape=21, size=2)
 #ggsave(p, file = "map1.png", width = 6, height = 4.5, type = "cairo-png")
+readline("continue?")
 
+
+## Plot a data concentration as matrix (sites x date) ################
+## Get the data of all the ACTIVE stations
+d3 <- merge(data.frame(AirQualityStationEoICode=stations[,1]),d2)
+#View(d3); dim(d3); 
+st.on <- sort(stations$AirQualityStationEoICode)
+NS<-50
+for(i in 1:ceiling(length(st.on)/50)){
+  cat(i)
+  print(levelplot(AirPollutionLevel~DatetimeBegin*AirQualityStationEoICode,
+            d3[d3$AirQualityStationEoICode
+               %in% st.on[(NS*(i-1)+1):(NS*i)],],
+            cuts=10,col.regions=rev(brewer.pal(11,"Spectral")),
+            scales=list(y=list(cex=.7))))
+  readline("Continue?")
+}
+
+## Aggregated time series
+dDm <- aggregate(AirPollutionLevel~DatetimeBegin,d3,mean) # daily mean
+str(d3)
+View(dDm)
+library(openair)
+names(dDm)[1] <- "date"
+#summaryPlot(dDm, period="months")
+timePlot(dDm, "AirPollutionLevel")
