@@ -10,6 +10,9 @@ library(ggmap)
 library(rgdal)
 library(ggplot2)
 library(openair)
+library(lattice)
+library(RColorBrewer)
+library(openair)
 
 ## Stations ###################################################################
 ## Read data
@@ -67,3 +70,24 @@ readline("Continue?")
 aqum <- aurn[,c("site","date","obs_no2")]
 aqumSub <- aqum[aqum$site %in% sites$site[sample(nrow(sites),5)],]
 summaryPlot(aqumSub, main="OBS_NO2")
+
+
+## Plot a data concentration as matrix (sites x date) ################
+st.on <- sort(unique(aurn$site))
+NS<-50
+for(i in 1:ceiling(length(st.on)/50)){
+  cat(i)
+  print(levelplot(obs_no2~date*site, 
+                  aurn[aurn$site
+                     %in% st.on[(NS*(i-1)+1):(NS*i)],],
+                  cuts=10,col.regions=rev(brewer.pal(11,"Spectral")),
+                  scales=list(y=list(cex=.7))))
+  readline("Continue?")
+}
+
+## Aggregated time series
+dDm <- aggregate(obs_pm10~date,aurn,mean) # daily mean
+#View(dDm)
+names(dDm)[1] <- "date"
+#summaryPlot(dDm, period="months")
+timePlot(dDm, "obs_pm10")
