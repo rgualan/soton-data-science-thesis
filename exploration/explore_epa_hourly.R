@@ -1,12 +1,13 @@
 # Clean environment #################################################################
 rm(list=ls())
+par(ask=T)
 
 # Libraries #########################################################################
 library(openair)
 
 
 # Read the data #####################################################################
-d <- read.csv('data/epa_hourly/2016/hourly_42101_2016_co.csv',header=T)
+d <- read.csv('data/epa/epa_hourly/2016/hourly_42101_2016_co.csv',header=T)
 d$DateTime.Local <- paste(d$Date.Local,d$Time.Local)
 d$date <- as.POSIXct(d$DateTime.Local,format="%Y-%m-%d %H:%M", tz="GMT")
 d$site <- as.factor(
@@ -15,3 +16,7 @@ d$var <- d$Sample.Measurement
 simpleFilter <- head(unique(d$site))
 summaryPlot(d[d$site %in% simpleFilter,c("date","site","var")], type="site")
 
+
+
+## End
+par(ask=F)
