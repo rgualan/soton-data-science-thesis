@@ -4,6 +4,7 @@
 
 # Clean environment #################################################################
 rm(list=ls())
+par(ask=T)
 
 # Libraries
 library(maps) # Provides functions that let us plot the maps
@@ -39,7 +40,7 @@ nrow(sites) # 62
 map('worldHires', 'UK', xlim=c(-8.5,2), ylim=c(50,58.6), mar=rep(0,4))	
 points(lat~lon,sites,pch=2,col=type)
 legend("topright",legend=unique(sites$type), pch=2, col=unique(sites$type))
-readline("Continue?")
+
 
 
 ## Shapefile plus stations inside GL
@@ -51,11 +52,11 @@ shpGL.wgs84 <- spTransform(shpGL, CRS("+init=epsg:4326"))
 
 ggplot(shpGL.wgs84) +
   geom_polygon(aes(x = long, y = lat, group = group), fill = "white", colour = "black") +
-  labs(x = "Longitude", y = "Latitude", title = "Map of Greater London with the borough boundaries") +
   geom_point(data = sites, aes(x = lon, y = lat, colour = type)) +
+  labs(x = "Longitude", y = "Latitude", title = "Map of Greater London with the borough boundaries") +
   coord_quickmap()
 #+scale_colour_manual(values = rainbow(14))
-readline("Continue?")
+
 
 
 
@@ -65,28 +66,29 @@ readline("Continue?")
 obsByMonth <- aggregate(cbind(aurn$obs_no2,aurn$obs_pm10),by=list(ym=format(aurn$date,"%Y-%m")),function(x){sum(!is.na(x))})
 barchart(ym~V1,obsByMonth)
 
+
 obsByYear <- aggregate(cbind(no2=aurn$obs_no2,pm10=aurn$obs_pm10),
                        by=list(year=format(aurn$date,"%Y")),
                        function(x){sum(!is.na(x))})
 barchart(year~no2+pm10,obsByYear,auto.key=T,main="Records by year")
 # Answer: 2007
-readline("Continue?")
+
 
 
 ## Simple ts plot to assess the results from the aggregation
 levelplot(obs_no2 ~ date * site, aurn[aurn$year==2009,], 
           cuts = 10, col.regions = rev(brewer.pal(11, "Spectral")),
           scales = list(y = list(cex = .7)), main="No2 - 2009")
-readline("Continue?")
+
 levelplot(obs_no2 ~ date * site, aurn[aurn$year==2007,], 
           cuts = 10, col.regions = rev(brewer.pal(11, "Spectral")),
           scales = list(y = list(cex = .7)), main="No2 - 2007")
-readline("Continue?")
+
 ## Plot a data concentration as matrix (sites x date) ################
 levelplot(obs_no2~date*site, aurn,
           cuts=10,col.regions=rev(brewer.pal(11,"Spectral")),
           scales=list(y=list(cex=.7)),main="No2 - 07-11")
-readline("Continue?")
+
 ## Notes:
 ## The difference in the amount of data between years is caused by the fact 
 ## that some stations only cover certain years
@@ -105,7 +107,7 @@ sitesByYear$year <- as.factor(sitesByYear$year)
 barchart(year~obs_no2.on+obs_pm10.on,sitesByYear,auto.key=T,
          main="Active stations by year",
          key=simpleKey(c("Active No2","Active Pm10"), points=F, rectangles=T, cex=0.7))
-readline("Continue?")
+
 
 
 
@@ -114,3 +116,8 @@ dDm <- aggregate(cbind(obs_no2,obs_pm10)~date,aurn,mean) # daily mean
 #View(dDm)
 #summaryPlot(dDm, period="months")
 timePlot(dDm, c("obs_pm10","obs_no2"))
+
+
+
+## End
+par(ask=F)

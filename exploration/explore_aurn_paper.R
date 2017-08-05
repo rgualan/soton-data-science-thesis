@@ -62,21 +62,21 @@ readline("Continue?")
 
 
 ## Time series ###################################################################
-aqum <- aurn[,c("site","date","aqum_no2")]
-aqumSub <- aqum[aqum$site %in% sites$site[sample(nrow(sites),5)],]
-summaryPlot(aqumSub, main="AQUM_NO2")
-readline("Continue?")
-
-aqum <- aurn[,c("site","date","obs_no2")]
-aqumSub <- aqum[aqum$site %in% sites$site[sample(nrow(sites),5)],]
-summaryPlot(aqumSub, main="OBS_NO2")
+# aqum <- aurn[,c("site","date","aqum_no2")]
+# aqumSub <- aqum[aqum$site %in% sites$site[sample(nrow(sites),5)],]
+# summaryPlot(aqumSub, main="AQUM_NO2")
+# readline("Continue?")
+# 
+# aqum <- aurn[,c("site","date","obs_no2")]
+# aqumSub <- aqum[aqum$site %in% sites$site[sample(nrow(sites),5)],]
+# summaryPlot(aqumSub, main="OBS_NO2")
 
 
 ## Plot a data concentration as matrix (sites x date) ################
 st.on <- sort(unique(aurn$site))
 NS<-50
 for(i in 1:ceiling(length(st.on)/50)){
-  cat(i)
+  print(i)
   print(levelplot(obs_no2~date*site, 
                   aurn[aurn$site
                      %in% st.on[(NS*(i-1)+1):(NS*i)],],
@@ -85,9 +85,142 @@ for(i in 1:ceiling(length(st.on)/50)){
   readline("Continue?")
 }
 
-## Aggregated time series
-dDm <- aggregate(obs_pm10~date,aurn,mean) # daily mean
-#View(dDm)
-names(dDm)[1] <- "date"
-#summaryPlot(dDm, period="months")
-timePlot(dDm, "obs_pm10")
+
+## Aggregated time series ############################################
+dailyAgg <- aggregate(obs_no2~date,aurn,mean) # daily mean
+names(dailyAgg)[2] <- "mean"
+ua <- aggregate(obs_no2~date,aurn,quantile,0.95) # upper
+la <- aggregate(obs_no2~date,aurn,quantile,0.05) # lower
+dailyAgg$upper <- ua$obs_no2
+dailyAgg$lower <- la$obs_no2
+#View(dailyAgg)
+## Plot
+ggplot() + 
+  geom_smooth(aes(x=date, y=mean, ymax=upper, ymin=lower), 
+              data=dailyAgg, stat='identity') +
+  ggtitle("Daily average and bounds")
+
+
+## Individual time series ############################################
+dailyAgg <- aggregate(obs_no2~date,aurn,mean) # daily mean
+names(dailyAgg)[2] <- "mean"
+ua <- aggregate(obs_no2~date,aurn,quantile,0.95) # upper
+la <- aggregate(obs_no2~date,aurn,quantile,0.05) # lower
+dailyAgg$upper <- ua$obs_no2
+dailyAgg$lower <- la$obs_no2
+#View(dailyAgg)
+## Plot
+ggplot() + 
+  geom_smooth(aes(x=date, y=mean, ymax=upper, ymin=lower), 
+              data=dailyAgg, stat='identity') +
+  ggtitle("Daily average and bounds")
+
+
+## Spatial autocorrelation ##########################################
+## Spatial autocorrelation in a variable can be exogenous (it is caused 
+## by another spatially autocorrelated variable, e.g. rainfall) or endogenous 
+## (it is caused by the process at play, e.g. the spread of a disease).
+
+## Daily mean
+acf(dailyAgg$mean)
+## One station
+acf(aurn$obs_no2[aurn$site==4], na.action = na.exclude)
+acf(aurn$obs_no2[aurn$site==sample(aurn$site,1)], na.action = na.exclude)
+readline("Continue?")
+
+
+## Anual aggregation ##########################################
+annual <- aggregate(obs_no2~site, aurn, mean)
+#annual$obs_no2 <- annual$obs_no2/1000
+annual <- merge(annual, sites)
+#View(annual)
+
+ggplot(annual[order(annual$obs_no2),]) +
+  labs(x = "Stations", y = "Annual sum (x1000)", title = "Annual observations") +
+  geom_point(aes(x = 1:nrow(annual), y = obs_no2, colour = type)) + 
+  theme(legend.position="bottom")
+
+
+## Annual interpolation map ###################################
+## Create SpatialPointsDataFrame
+dsp <- SpatialPoints(annual[,3:4], proj4string=CRS("+proj=longlat +datum=WGS84"))
+dsp <- SpatialPointsDataFrame(dsp, annual)
+
+## GB boundline shapefile 
+#shpGB1 <- readOGR("data/maps/bdline_essh_gb/GB", layer = "european_region_region1")
+#shpGB <- readOGR("data/maps/bdline_essh_gb/GB", layer = "european_region_region_boundary")
+#shpGB <- readOGR("data/maps/strtgi_essh_gb/data", layer = "coastline")
+shpGB <- readOGR("data/maps/Countries_De_2016_Clipped_Boundaries_in_GB", 
+                 layer = "Countries_December_2016_Ultra_Generalised_Clipped_Boundaries_in_Great_Britain")
+proj4string(shpGB)
+shpGB <- spTransform(shpGB, CRS("+proj=longlat +datum=WGS84"))
+ggplot(shpGB) +
+  geom_polygon(aes(x = long, y = lat, group = group), fill = "white", colour = "black") +
+  labs(x = "Longitude", y = "Latitude", title = "Map of Great Britain") +
+  geom_point(data = dsp@data, aes(x = lon, y = lat, colour = type)) +
+  coord_quickmap()
+
+
+# define groups for mapping
+range(dsp$obs_no2)
+cuts <- c(0,25,50,75,200)
+# set up a palette of interpolated colors
+#blues <- colorRampPalette(c('yellow', 'orange', 'blue', 'dark blue'))
+blues <- colorRampPalette(c('lightblue', 'orange', 'red4'))
+pols <- list("sp.polygons", shpGB, fill = "white")
+#spplot(dsp, 'obs_no2', cuts=cuts, col.regions=blues(5), sp.layout=pols, pch=20, cex=1)
+spplot(dsp, 'obs_no2', cuts=cuts, col.regions=blues(5), sp.layout=pols, 
+       pch=20, cex=1)
+
+
+
+
+## Proximity polygons ######################################################
+## Proximity polygons can be used to interpolate categorical variables. 
+## Another term for this is “nearest neighbour” interpolation.
+
+library(dismo)
+v <- voronoi(dsp)
+## Loading required namespace: deldir
+plot(v)
+
+## Aggregate countries into a single boundary for clipping the Voronoi polygons
+shpAggGB <- aggregate(shpGB)
+plot(shpAggGB)
+
+vclipped <- intersect(v, shpAggGB)
+spplot(vclipped, 'obs_no2', col.regions=rev(get_col_regions()))
+
+## Much better. These are polygons. We can ‘rasterize’ the results like this.
+r <- raster(shpAggGB, res=0.01)  
+#vr <- rasterize(vclipped, r, 'obs_no2')
+vr <- rasterize(vclipped, r, 'obs_no2')
+plot(vr)
+
+
+## Now evaluate with 5-fold cross validation
+RMSE <- function(observed, predicted) {
+  sqrt(mean((predicted - observed)^2, na.rm=TRUE))
+}
+
+set.seed(133133)
+kf <- kfold(nrow(dsp))
+
+rmse <- rep(NA, 5)
+for (k in 1:5) {
+  #k <- 1
+  test <- dsp[kf == k, ]
+  train <- dsp[kf != k, ]
+  v <- voronoi(train)
+  p <- extract(v, test)
+  rmse[k] <- RMSE(test$obs_no2, p$obs_no2)
+}
+rmse
+mean(rmse)
+## This results are relatively good because they were obtained with aggregated data
+
+
+
+## [1] 196.7708
+1 - (mean(rmse) / null)
+## [1] 0.5479875
