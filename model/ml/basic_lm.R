@@ -1,5 +1,6 @@
 ## Clean environment
 rm(list=ls())
+par(ask=T)
 
 ## Load libraries
 library(spTimer)
@@ -64,7 +65,5 @@ lm.1 <- lm(sqrtobs~sqrtaqm+type, fitting_file)
 prediction_file$lm.1 <- predict(lm.1, newdata = prediction_file)^2
 spT.validation(prediction_file$obs, prediction_file$lm.1)
 cor(prediction_file$obs, prediction_file$lm.1, use = "pairwise.complete.obs")^2
-
-
 
 
