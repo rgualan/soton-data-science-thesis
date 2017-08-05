@@ -1,3 +1,8 @@
+## Clean environment
+rm(list=ls())
+par(ask=T)
+
+## Load libraries
 library(spBayes)
 
 ## Not run:
