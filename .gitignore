@@ -117,3 +117,5 @@ ENV/
 .Rproj.user
 
 tutorials/
+img/
+*.RData

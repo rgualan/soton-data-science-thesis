@@ -96,7 +96,11 @@ Piemonte_data_validation$time = rep(1:n_days,each = n_stations_val)
 ## ################################
 ## Estimation
 ## ################################
-plot(coords$UTMX, coords$UTMY)
+map('worldHires', c('France'), xlim=c(-4.7,8.1), ylim=c(42.4,51), mar=rep(1,4))	
+points(coords$Longitude, coords$Latitude, pch=16, col="green")
+points(coords_validation$Longitude, coords_validation$Latitude)
+points(coords_validation$Longitude, coords_validation$Latitude, pch=16, col="cyan")
+legend("topleft", c("Training", "Validation"), pch=c(16,16), col=c("green","cyan"))
 
 ## ################################
 ## Triangulation using borders
