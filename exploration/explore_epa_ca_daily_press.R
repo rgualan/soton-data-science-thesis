@@ -7,30 +7,29 @@ library(lattice)
 library(RColorBrewer)
 library(ggplot2)
 
-## Settings ##########################################################################
-printPlots <- T
 
 ## Read data #########################################################################
 ## Build the list of active stations starting from the data
-# d <- read.csv("data/epa/epa_daily/2016/daily_44201_2016_ozone.csv", header=T)
-# d$Date <- as.POSIXct(d$Date.Local,format="%Y-%m-%d", tz="GMT")
-# ## Filter California 
-# d <- d[d$State.Name=="California", ]
-# d$Site <- as.factor(sprintf("%03d-%04d-%01d",d$County.Code,d$Site.Num,d$POC))
-# d$Station.Code <- as.factor(sprintf("%03d-%04d",d$County.Code,d$Site.Num))
-# ## Generic variable name
-# names(d)[names(d)=="Arithmetic.Mean"] <- "Measurement"
-# ## Keep relevant fields
-# d <- d[,c("Station.Code","Site","POC", "Latitude","Longitude","Date","Measurement")] # "Date","State.Code","State.Name", "County.Code","Site.Num","POC",
-# head(d)
-# saveRDS(d, "data/epa/epa_daily/2016/daily_44201_2016_ozone_ca.RDS")
-d <- readRDS("data/epa/epa_daily/2016/daily_44201_2016_ozone_ca.RDS")
+## Read data
+d <- read.csv("data/epa/epa_daily/2016/daily_PRESS_2016.csv", header=T)
+#View(d)
+#summary(d)
+d$Date <- as.POSIXct(d$Date.Local,format="%Y-%m-%d", tz="GMT")
+## Filter California 
+d <- d[d$State.Name=="California", ]
+d$Site <- as.factor(sprintf("%03d-%04d-%01d",d$County.Code,d$Site.Num,d$POC))
+d$Station.Code <- as.factor(sprintf("%03d-%04d",d$County.Code,d$Site.Num))
+
+## Generic variable name
+names(d)[names(d)=="Arithmetic.Mean"] <- "Measurement"
+## Keep relevant fields
+d <- d[,c("Station.Code","Site","POC", "Latitude","Longitude","Date","Measurement")] # "Date","State.Code","State.Name", "County.Code","Site.Num","POC",
+head(d)
 
 ## Relevant period
 dateA <- as.POSIXct("2016-01-01", format="%Y-%m-%d", tz="GMT")
 dateB <- as.POSIXct("2016-12-31", format="%Y-%m-%d", tz="GMT")
 td <- (dateB-dateA)+1
-# d <- d[d$Date>=dateA & d$Date<=dateB, ]
 
 ## Read sites
 sites_md <- read.csv("data/epa/sites/aqs_sites.csv", header=T)
@@ -54,6 +53,10 @@ d <- aggregate(Measurement~Station.Code+Date,d,mean)
 dim(d)
 
 
+## Remove faulty readings
+d$Measurement[d$Measurement>1500] <- NA
+d$Measurement[d$Measurement<850] <- NA
+
 ## Initial exploration ##############################################################################
 hist(d$Measurement)
 ggplot(d) + 
@@ -66,7 +69,6 @@ ggplot(d) +
 ## Plot a data concentration as matrix (sites x date)
 NS<-50
 for(i in 1:ceiling(length(sites)/50)){
-  #i = 1
   print(i)
   print(levelplot(Measurement~Date*Station.Code, 
                   d[d$Station.Code %in% sites[(NS*(i-1)+1):(NS*i)],],
@@ -74,18 +76,6 @@ for(i in 1:ceiling(length(sites)/50)){
                   scales=list(y=list(cex=.7))))
   #readline("Continue?")
 }
-
-
-## Disable URBAN stations ########################################################
-head(sitesDs)
-d2 <- merge(d, sitesDs[,c("Station.Code","Location.Setting")])
-head(d2)
-levels(d2$Location.Setting)
-unique(d2$Location.Setting)
-nrow(d)
-d <- d2[d2$Location.Setting %in% c("RURAL",""),-4]
-nrow(d)
-unique(d$Station.Code)
 
 
 ## Disable stations with no enough data #########################################
@@ -112,16 +102,13 @@ mapCA <- mapUSA[mapUSA$NAME_1=="California",]
 proj4string(mapCA)
 plot(mapCA)
 
-if(printPlots) jpeg("img/eda/ca_ozone.jpeg", 6, 6, "in", bg="white", res=150)
 ggplot(mapCA) +
   geom_polygon(aes(x = long, y = lat, group = group), fill = "white", colour = "black") +
   geom_point(data = sitesDs, aes(x = Longitude, y = Latitude, fill=Location.Setting),
              alpha = .75, shape=21, size=2) +
-  labs(x = "Longitude", y = "Latitude", fill="Type") +
-  coord_quickmap() + 
-  theme(legend.justification = c("right", "top"), legend.position = c(.95, .95), 
-        legend.box.background = element_rect(), legend.box.margin = margin(6, 6, 6, 6))
-if(printPlots) dev.off()
+  labs(x = "Longitude", y = "Latitude", title = "Map of California") +
+  coord_quickmap()
+
 
 ## Check NAs and Time series ##################################################################
 ## Concentration map
@@ -137,13 +124,12 @@ ggplot(d) +
 
 ## Notes:
 ## Maybe remove the station with the event! 
-range(d$Measurement)
+range(d$Measurement, na.rm=T)
 hist(d$Measurement)
-max(d$Measurement)
 
 
 ## Save dataset #####################################################################
-d <- d[order(d$Station.Code,d$Date),]
-sitesDs <- sitesDs[order(sitesDs$Station.Code),]
-saveRDS(d, "data/epa/epa_daily/2016/california_ozone.RDS")
-saveRDS(sitesDs, "data/epa/epa_daily/2016/sites_ozone.RDS")
+# d <- d[order(d$Station.Code,d$Date),]
+# names(d)[3] <- "Press"
+# saveRDS(d, "data/epa/epa_daily/2016/california_press.RDS")
+

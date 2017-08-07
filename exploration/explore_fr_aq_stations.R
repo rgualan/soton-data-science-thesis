@@ -1,5 +1,6 @@
 # Clean environment #################################################################
 rm(list=ls())
+par(ask=T)
 
 # Libraries
 library(maps) # Provides functions that let us plot the maps
@@ -73,7 +74,7 @@ points(stations[stations$distanceToParis<1.5, c("Longitude","Latitude")],
        pch=16,col=alpha("green",0.5))
 
 nrow(stations[stations$distanceToParis<1.5,])
-readline("continue?")
+#readline("continue?")
 
 
 
@@ -92,7 +93,7 @@ ggmap(mapFrance) +
   geom_point(aes(x=Longitude, y=Latitude, 
                  fill = AirQualityStationArea), 
              data = stations, alpha = .75, shape=21, size=2)
-readline("Continue?")
+#readline("Continue?")
 # Notes:
 # Several types of map were tested
 # The most relevant types of map for the study are:
@@ -103,7 +104,7 @@ ggmap(mapFrance) +
   geom_point(aes(x=Longitude, y=Latitude, 
                  fill = AirQualityStationType), 
              data = stations, alpha = .75, shape=21, size=2)
-readline("Continue?")
+#readline("Continue?")
 
 ## Plot map of Paris and the stations
 #mapParis <- get_map(location = 'Paris', zoom = "auto", maptype="roadmap")
@@ -113,7 +114,7 @@ if(!exists("mapParis")) load("data/maps/mapParis.Rdata")
 ggmap(mapParis) +
   geom_point(aes(x=Longitude, y=Latitude, fill = AirQualityStationArea), 
              data = stations, alpha = .75, shape=21, size=2)
-readline("Continue?")
+#readline("Continue?")
 
 
 
@@ -130,7 +131,7 @@ ggplot() +
              aes(x=Longitude, y=Latitude, fill = AirQualityStationArea), 
              alpha = .75, shape=21, size=2)
 #ggsave(p, file = "map1.png", width = 6, height = 4.5, type = "cairo-png")
-readline("continue?")
+#readline("continue?")
 
 
 ## Plot a data concentration as matrix (sites x date) ################
@@ -146,7 +147,7 @@ for(i in 1:ceiling(length(st.on)/50)){
                %in% st.on[(NS*(i-1)+1):(NS*i)],],
             cuts=10,col.regions=rev(brewer.pal(11,"Spectral")),
             scales=list(y=list(cex=.7))))
-  readline("Continue?")
+  #readline("Continue?")
 }
 
 ## Aggregated time series

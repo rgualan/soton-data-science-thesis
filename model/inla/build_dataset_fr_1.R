@@ -3,6 +3,7 @@
 
 # Clean environment
 rm(list=ls())
+par(ask=T)
 
 # Load libraries
 library(sp)
@@ -94,7 +95,7 @@ stations_training <- stations[
 # Simple plot
 plot(stations_training$Longitude, stations_training$Latitude, col="blue")
 points(stations_validation$Longitude, stations_validation$Latitude, col="green")
-readline("Continue?")
+#readline("Continue?")
 
 
 ## Second try
@@ -103,16 +104,21 @@ readline("Continue?")
 ## TODO: Randomly chose stations which are not too close
 #stations_training2 <- stations_training[sample(nrow(stations_training),24),]
 #stations_validation2 <- stations_validation[sample(nrow(stations_validation),10),]
+# write.csv(stations_training2, 
+#           file = "data/FR_AQeReporting_2013-2015/coordinates.csv", row.names = F)
+# write.csv(stations_validation2, 
+#           file = "data/FR_AQeReporting_2013-2015/coordinates_val.csv", row.names = F)
+# stations_training2 <- read.csv("data/FR_AQeReporting_2013-2015/coordinates.csv", header = T)
+# stations_validation2 <- read.csv("data/FR_AQeReporting_2013-2015/coordinates_val.csv", header = T)
+
+
+
 # Simple plot
 plot(stations_training2$Longitude, stations_training2$Latitude, col="blue")
 points(stations_validation2$Longitude, stations_validation2$Latitude, col="green")
-readline("Continue?")
+#readline("Continue?")
 
 
-write.csv(stations_training2, 
-          file = "data/FR_AQeReporting_2013-2015/coordinates.csv", row.names = F)
-write.csv(stations_validation2, 
-          file = "data/FR_AQeReporting_2013-2015/coordinates_val.csv", row.names = F)
 
 
 

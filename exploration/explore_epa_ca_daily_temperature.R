@@ -12,7 +12,9 @@ printPlots <- T
 
 ## Read data #########################################################################
 ## Build the list of active stations starting from the data
-# d <- read.csv("data/epa/epa_daily/2016/daily_44201_2016_ozone.csv", header=T)
+## Read data
+# d <- read.csv("data/epa/epa_daily/2016/daily_TEMP_2016.csv", header=T)
+# #View(d)
 # d$Date <- as.POSIXct(d$Date.Local,format="%Y-%m-%d", tz="GMT")
 # ## Filter California 
 # d <- d[d$State.Name=="California", ]
@@ -23,8 +25,8 @@ printPlots <- T
 # ## Keep relevant fields
 # d <- d[,c("Station.Code","Site","POC", "Latitude","Longitude","Date","Measurement")] # "Date","State.Code","State.Name", "County.Code","Site.Num","POC",
 # head(d)
-# saveRDS(d, "data/epa/epa_daily/2016/daily_44201_2016_ozone_ca.RDS")
-d <- readRDS("data/epa/epa_daily/2016/daily_44201_2016_ozone_ca.RDS")
+# saveRDS(d, "data/epa/epa_daily/2016/daily_TEMP_2016_ca.RDS")
+d <- readRDS("data/epa/epa_daily/2016/daily_TEMP_2016_ca.RDS")
 
 ## Relevant period
 dateA <- as.POSIXct("2016-01-01", format="%Y-%m-%d", tz="GMT")
@@ -76,23 +78,12 @@ for(i in 1:ceiling(length(sites)/50)){
 }
 
 
-## Disable URBAN stations ########################################################
-head(sitesDs)
-d2 <- merge(d, sitesDs[,c("Station.Code","Location.Setting")])
-head(d2)
-levels(d2$Location.Setting)
-unique(d2$Location.Setting)
-nrow(d)
-d <- d2[d2$Location.Setting %in% c("RURAL",""),-4]
-nrow(d)
-unique(d$Station.Code)
-
 
 ## Disable stations with no enough data #########################################
 recordsByStation <- aggregate(Measurement~Station.Code, d, length)
 names(recordsByStation)[ncol(recordsByStation)] <- "Count"
 #View(recordsByStation);
-minNumRecords <- 0.70*as.integer((dateB-dateA)+1)
+minNumRecords <- 0.80*as.integer((dateB-dateA)+1)
 ## Disable stations
 ## Before:
 nrow(recordsByStation)
@@ -112,7 +103,7 @@ mapCA <- mapUSA[mapUSA$NAME_1=="California",]
 proj4string(mapCA)
 plot(mapCA)
 
-if(printPlots) jpeg("img/eda/ca_ozone.jpeg", 6, 6, "in", bg="white", res=150)
+if(printPlots) jpeg("img/eda/ca_temperature.jpeg", 6, 6, "in", bg="white", res=150)
 ggplot(mapCA) +
   geom_polygon(aes(x = long, y = lat, group = group), fill = "white", colour = "black") +
   geom_point(data = sitesDs, aes(x = Longitude, y = Latitude, fill=Location.Setting),
@@ -122,6 +113,7 @@ ggplot(mapCA) +
   theme(legend.justification = c("right", "top"), legend.position = c(.95, .95), 
         legend.box.background = element_rect(), legend.box.margin = margin(6, 6, 6, 6))
 if(printPlots) dev.off()
+
 
 ## Check NAs and Time series ##################################################################
 ## Concentration map
@@ -144,6 +136,7 @@ max(d$Measurement)
 
 ## Save dataset #####################################################################
 d <- d[order(d$Station.Code,d$Date),]
-sitesDs <- sitesDs[order(sitesDs$Station.Code),]
-saveRDS(d, "data/epa/epa_daily/2016/california_ozone.RDS")
-saveRDS(sitesDs, "data/epa/epa_daily/2016/sites_ozone.RDS")
+names(d)[3] <- "Temperature" 
+saveRDS(d, "data/epa/epa_daily/2016/california_temperature.RDS")
+saveRDS(sitesDs, "data/epa/epa_daily/2016/california_temperature_sites.RDS")
+
