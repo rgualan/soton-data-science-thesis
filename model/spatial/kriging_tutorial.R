@@ -23,6 +23,7 @@ coordinates(meuse) <- ~ x + y
 
 lzn.vgm <- variogram(log(zinc)~1, meuse) # calculates sample variogram values 
 lzn.fit <- fit.variogram(lzn.vgm, model=vgm(1, "Sph", 900, 1)) # fit model
+lzn.fit <- fit.variogram(lzn.vgm, model=vgm("Sph")) # fit model
 plot(lzn.vgm, lzn.fit) # plot the sample values, along with the fit model
 
 #### Performing Kriging ####
