@@ -1,10 +1,8 @@
 ## AURN dataset taken from
 ## http://www.southampton.ac.uk/~sks/pollution_estimates/
 
-
 # Clean environment #################################################################
 rm(list=ls())
-par(ask=T)
 
 # Libraries
 library(maps) # Provides functions that let us plot the maps
@@ -117,7 +115,3 @@ dDm <- aggregate(cbind(obs_no2,obs_pm10)~date,aurn,mean) # daily mean
 #summaryPlot(dDm, period="months")
 timePlot(dDm, c("obs_pm10","obs_no2"))
 
-
-
-## End
-par(ask=F)

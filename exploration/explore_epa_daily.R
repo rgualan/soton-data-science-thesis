@@ -1,3 +1,7 @@
+## Clean environment
+rm(list=ls())
+
+## Load libraries
 library(openair)
 
 # Read the file ###########################################
@@ -18,7 +22,6 @@ while(index<length(sites)){
   d2 <- d[d$site %in% chosen,]
   summaryPlot(d2, period="months", pollutant = "var", type="site")
   #timePlot(d2, pollutant = "var", type="site")
-  readline("Continue?")
 }
 
 

@@ -32,7 +32,7 @@ length(unique(d$Station.Code))
 
 ## Filter data to match relevant criteria
 dateA <- as.POSIXct("2016-01-01", format="%Y-%m-%d", tz="GMT")
-dateB <- as.POSIXct("2016-04-30", format="%Y-%m-%d", tz="GMT")
+dateB <- as.POSIXct("2016-12-31", format="%Y-%m-%d", tz="GMT")
 td <- (dateB-dateA)+1
 d2 <- d[d$date>=dateA & d$date<=dateB,]
 #View(d2)
@@ -59,7 +59,7 @@ summaryPlot(d2[d2$Station.Code %in% randomStations,
                c("date","site","Arithmetic.Mean")],
             period = "months", pollutant="Arithmetic.Mean", type="site",
             main="Time series of random stations")
-readline("Continue?")
+
 
 
 ## Active stations
@@ -86,7 +86,7 @@ nrow(stations)
 map('state')	
 points(Latitude~Longitude,stations,cex=0.5,pch=17,col="blue")
 title(sprintf("Active daily %s stations",varName))
-readline("Continue?")
+
 
 #mapUSA <- get_map(location = 'USA', zoom = 4, maptype = "roadmap")
 #save(mapUSA, file="data/maps/mapUSA.Rdata")
@@ -97,14 +97,14 @@ ggmap(mapUSA) +
   geom_point(aes(x=Longitude, y=Latitude, fill=Location.Setting), 
              data = stations, alpha = .75, shape=24, size=1)
 nrow(stations)
-readline("Continue?")
+
 
 ## California
 stations2 <- stations[stations$State.Name=="California",]
 # map('state', 'California')	
 # points(Latitude~Longitude,stations2,cex=2,pch=".")
 # title(sprintf("Active hourly %s stations in California",varName))
-# readline("Continue?")
+# 
 # nrow(stations2)
 
 ## Map
@@ -113,7 +113,7 @@ ggmap(mapCali) +
   ggtitle(sprintf("Active hourly %s stations in California",varName)) +
   geom_point(aes(x=Longitude, y=Latitude, fill=Location.Setting), 
              data = stations2, alpha = .75, shape=24, size=1)
-readline("Continue?")
+
 
 ## New York
 stations2 <- stations[stations$State.Name=="New York",]
@@ -125,7 +125,7 @@ ggmap(mapNY) +
   geom_point(aes(x=Longitude, y=Latitude, fill=Location.Setting), 
              data = stations2, alpha = .75, shape=24, size=2)
 nrow(stations2)
-readline("Continue?")
+
 
 
 
@@ -159,7 +159,7 @@ names(countByMonthYear)[2] <- "Count"
 par(las=2) # make label text perpendicular to axis
 barplot(countByMonthYear$Count, names.arg=countByMonthYear$MonthYear, 
         horiz=T, cex.names=0.7, main="Data by month") 
-readline("Continue?")
+
 
 
 ## Plot all the stations in USA
@@ -168,7 +168,7 @@ map('state')
 points(Latitude~Longitude,stations[stations$FRMFEM=="FRMFEM",],cex=0.5,pch=16,col="blue")
 points(Latitude~Longitude,stations[stations$FRMFEM=="non-FRMFEM",],cex=0.5,pch=16,col="green")
 title("Daily PM2.5 stations FEM versus non FEM")
-readline("Continue?")
+
 
 
 ## Plot ACTIVE stations in USA 
@@ -235,3 +235,4 @@ ggmap(mapUSA) +
   ggtitle("Active daily Temperature stations") +
   geom_point(aes(x=Longitude, y=Latitude, fill = Location.Setting), #Location.Setting/Land.Use
              data = stations, alpha = .75, shape=24, size=1)
+

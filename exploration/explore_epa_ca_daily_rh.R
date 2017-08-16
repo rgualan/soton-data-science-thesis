@@ -141,4 +141,5 @@ max(d$Measurement)
 d <- d[order(d$Station.Code,d$Date),]
 names(d)[3] <- "RH"
 saveRDS(d, "data/epa/epa_daily/2016/california_rh.RDS")
+saveRDS(sitesDs, "data/epa/epa_daily/2016/california_rh_sites.RDS")
 

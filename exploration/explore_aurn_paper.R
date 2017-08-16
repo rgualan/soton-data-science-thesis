@@ -1,7 +1,7 @@
-# Clean environment #################################################################
+## Clean environment #################################################################
 rm(list=ls())
 
-# Libraries
+## Load Libraries
 library(maps) # Provides functions that let us plot the maps
 library(mapdata) # Contains the hi-resolution points that mark out the countries.
 library(sp)
@@ -13,11 +13,12 @@ library(openair)
 library(lattice)
 library(RColorBrewer)
 library(openair)
+source("util/my_helper.R")
 
 ## Stations ###################################################################
 ## Read data
 aurn <- read.table("data/aurn/AURN_data_07_11.txt",header=T)
-aurn$date <- as.POSIXct(sprintf("%04d-%02d-%02d", aurn$year,aurn$month,aurn$day),tz="GMT")
+aurn$date <- convertStringToPOSIXct( sprintf("%04d-%02d-%02d", aurn$year,aurn$month,aurn$day))
 names(aurn)[1] <- "site"
 aurn$site <- as.factor(aurn$site)
 nrow(aurn) # 262944
@@ -28,7 +29,7 @@ sites <- unique(aurn[,c(1:3,6)])
 map('worldHires', 'UK', xlim=c(-8.5,2), ylim=c(50,58.6), mar=rep(0,4))	
 points(lat~lon,sites,pch=2,col=type)
 legend("topright",legend=unique(sites$type), pch=2, col=unique(sites$type))
-readline("Continue?")
+
 
 
 ## Highlight stations inside Greater London
@@ -38,12 +39,12 @@ nrow(sitesGL)
 map('worldHires', c('UK'), xlim=c(-8.5,2), ylim=c(50,58.6), mar=rep(0,4))	
 points(lat~lon,sites,pch=".",col="blue",cex=2)
 points(lat~lon,sitesGL,pch="*",col="green",cex=1)
-readline("Continue?")
+
 
 ## Only stations inside Greater London
 par(.pardefault)
 plot(lat~lon,sitesGL,pch=2,col="green",cex=1)
-readline("Continue?")
+
 
 ## Shapefile plus stations inside GL
 ## Ref: https://medium.com/towards-data-science/plotting-a-map-of-london-crime-data-using-r-8dcefef1c397
@@ -58,14 +59,14 @@ ggplot(shpGL.wgs84) +
   geom_point(data = sitesGL, aes(x = lon, y = lat, colour = type)) +
   coord_quickmap()
 #+scale_colour_manual(values = rainbow(14))
-readline("Continue?")
+
 
 
 ## Time series ###################################################################
 # aqum <- aurn[,c("site","date","aqum_no2")]
 # aqumSub <- aqum[aqum$site %in% sites$site[sample(nrow(sites),5)],]
 # summaryPlot(aqumSub, main="AQUM_NO2")
-# readline("Continue?")
+# 
 # 
 # aqum <- aurn[,c("site","date","obs_no2")]
 # aqumSub <- aqum[aqum$site %in% sites$site[sample(nrow(sites),5)],]
@@ -82,26 +83,11 @@ for(i in 1:ceiling(length(st.on)/50)){
                      %in% st.on[(NS*(i-1)+1):(NS*i)],],
                   cuts=10,col.regions=rev(brewer.pal(11,"Spectral")),
                   scales=list(y=list(cex=.7))))
-  readline("Continue?")
+  
 }
 
 
 ## Aggregated time series ############################################
-dailyAgg <- aggregate(obs_no2~date,aurn,mean) # daily mean
-names(dailyAgg)[2] <- "mean"
-ua <- aggregate(obs_no2~date,aurn,quantile,0.95) # upper
-la <- aggregate(obs_no2~date,aurn,quantile,0.05) # lower
-dailyAgg$upper <- ua$obs_no2
-dailyAgg$lower <- la$obs_no2
-#View(dailyAgg)
-## Plot
-ggplot() + 
-  geom_smooth(aes(x=date, y=mean, ymax=upper, ymin=lower), 
-              data=dailyAgg, stat='identity') +
-  ggtitle("Daily average and bounds")
-
-
-## Individual time series ############################################
 dailyAgg <- aggregate(obs_no2~date,aurn,mean) # daily mean
 names(dailyAgg)[2] <- "mean"
 ua <- aggregate(obs_no2~date,aurn,quantile,0.95) # upper
@@ -126,7 +112,7 @@ acf(dailyAgg$mean)
 ## One station
 acf(aurn$obs_no2[aurn$site==4], na.action = na.exclude)
 acf(aurn$obs_no2[aurn$site==sample(aurn$site,1)], na.action = na.exclude)
-readline("Continue?")
+
 
 
 ## Anual aggregation ##########################################
@@ -222,5 +208,5 @@ mean(rmse)
 
 
 ## [1] 196.7708
-1 - (mean(rmse) / null)
+#1 - (mean(rmse) / null) # null?
 ## [1] 0.5479875

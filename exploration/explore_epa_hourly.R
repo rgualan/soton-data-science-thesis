@@ -1,6 +1,5 @@
 # Clean environment #################################################################
 rm(list=ls())
-par(ask=T)
 
 # Libraries #########################################################################
 library(openair)
@@ -17,6 +16,3 @@ simpleFilter <- head(unique(d$site))
 summaryPlot(d[d$site %in% simpleFilter,c("date","site","var")], type="site")
 
 
-
-## End
-par(ask=F)

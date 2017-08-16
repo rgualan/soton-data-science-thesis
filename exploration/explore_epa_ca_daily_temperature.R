@@ -6,6 +6,7 @@ library(sp)
 library(lattice)
 library(RColorBrewer)
 library(ggplot2)
+source("util/my_helper.R")
 
 ## Settings ##########################################################################
 printPlots <- T
@@ -121,11 +122,10 @@ print(levelplot(Measurement~Date*Station.Code,d,
                 cuts=10,col.regions=rev(brewer.pal(11,"Spectral")),
                 scales=list(y=list(cex=.7))))
 
+heatmapPlusTs(d, "Temperature (°F)", "img/eda/heatmap_ca_temperature.jpeg")
 
-## Time series plot
-ggplot(d) + 
-  geom_line(aes(x=Date,y=Measurement,col=Station.Code), alpha=0.5, size=0.5) +
-  theme(legend.position="none")
+
+
 
 ## Notes:
 ## Maybe remove the station with the event! 
