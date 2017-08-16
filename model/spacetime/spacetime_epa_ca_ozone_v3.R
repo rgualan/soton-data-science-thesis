@@ -5,8 +5,10 @@
 
 ## Clean environment
 rm(list=ls())
+## Settings
 set.seed(123)
 smplDays <- sort(sample(365,8))
+forceRun <- T
 #load("model/spacetime/ws1.RData")
 
 
@@ -15,20 +17,13 @@ library(gstat)
 library(spacetime)
 library(rgdal)
 library(reshape2)
+
 source("util/my_helper.R")
 
 ## Read data #######################################################################
 #epa <- readRDS("data/epa/epa_daily/2016/california_ozone.RDS")
 epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
 epa <- epa[order(epa$Station.Code, epa$Date),]
-# epa.sites <- readRDS("data/epa/epa_daily/2016/california_ozone_sites.RDS")
-# epa.sites <- epa.sites[,c("Station.Code","Longitude","Latitude")]
-# epa <- merge(epa, epa.sites )
-# names(epa)[names(epa)=="Longitude"] <- c("x")
-# names(epa)[names(epa)=="Latitude"] <- c("y")
-#View(epa)
-#View(epa.sites)
-
 
 ## Standardize variable ############################################################
 ## http://machinelearningmastery.com/normalize-standardize-time-series-data-python/
@@ -57,8 +52,8 @@ utm11 = CRS("+proj=utm +zone=11 +datum=WGS84 +ellps=WGS84 +units=km")
 mapCA.utm <- spTransform(mapCA,utm11) 
 plot(mapCA.utm)
 range(coordinates(mapCA))
-range(coordinates(mapCA.utm))
 
+range(coordinates(mapCA.utm))
 
 
 ## Assemble STFDF ############################################################
@@ -81,6 +76,10 @@ stplot(epa.STFDF[,"2016-01-01::2016-01-09"])
 dim(epa.STFDF)
 
 
+## Simple data imputation (TODO)
+# sum(is.na(epa.matrix))
+# epa.matrix[is.na(epa.matrix)] <- 0
+
 ## Exploratory Variogram Analysis ################################################
 data(meuse)
 coordinates(meuse) <- ~x+y
@@ -93,7 +92,7 @@ hscat(Ozone ~ 1,
       (0:9) * 100)
 
 ## variogram cloud
-empVgm <- variogramST(Ozone~1, data=epa.STFDF, tlags=0:10, na.omit=T)
+empVgm <- variogramST(Ozone~1, data=epa.STFDF, tlags=0:2, na.omit=T)
 plot(empVgm, map=F)
 plot(empVgm, wireframe=T, scales=list(arrows=F))
 
@@ -194,30 +193,56 @@ plot(gridCA)
 CA_pred <- STF(gridCA, epa.STFDF@time[smplDays])
 tIDS <- unique(pmax(1,pmin(as.numeric(outer(-5:5, smplDays, "+")), 365)))
 
-# sepPred <- krigeST(Ozone~1, data=epa.STFDF[,tIDS], 
-#                    newdata=CA_pred, fitSepModel, nmax=50,
-#                    stAni=linStAni/24/3600) # fitMetricModel$stAni
-# psPred <- krigeST(Ozone~1, data=epa.STFDF[,tIDS], 
-#                   newdata=CA_pred, fitProdSumModel, nmax=50,
-#                   stAni=linStAni/24/3600)
-# sumPred <- krigeST(Ozone~1, data=epa.STFDF[,tIDS], 
-#                    newdata=CA_pred, fitSumMetricModel, nmax=50,
-#                    stAni=fitSumMetricModel$stAni/24/3600)
-# saveRDS(sepPred, file="data/tmp/sepPred.RDS")
-# saveRDS(psPred, file="data/tmp/psPred.RDS")
-# saveRDS(sumPred, file="data/tmp/sumPred.RDS")
-sepPred <- readRDS("data/tmp/sepPred.RDS")
-psPred <- readRDS("data/tmp/psPred.RDS")
-sumPred <- readRDS("data/tmp/sumPred.RDS")
+if(forceRun){
+  sepPred <- krigeST(Ozone~1, data=epa.STFDF[,tIDS],
+                     newdata=CA_pred, fitSepModel, nmax=50,
+                     stAni=linStAni/24/3600) # fitMetricModel$stAni
+  psPred <- krigeST(Ozone~1, data=epa.STFDF[,tIDS],
+                    newdata=CA_pred, fitProdSumModel, nmax=50,
+                    stAni=linStAni/24/3600)
+  sumPred <- krigeST(Ozone~1, data=epa.STFDF[,tIDS],
+                     newdata=CA_pred, fitSumMetricModel, nmax=50,
+                     stAni=fitSumMetricModel$stAni/24/3600)
+  saveRDS(sepPred, file="data/tmp/sepPred.RDS")
+  saveRDS(psPred, file="data/tmp/psPred.RDS")
+  saveRDS(sumPred, file="data/tmp/sumPred.RDS")
+}else{
+  ## Load the last saved variables
+  sepPred <- readRDS("data/tmp/sepPred.RDS")
+  psPred <- readRDS("data/tmp/psPred.RDS")
+  sumPred <- readRDS("data/tmp/sumPred.RDS")
+}
 
 # Spatio-temporal model (for the paper)
-# stpl <- stplot(sepPred2, col.regions=bpy.colors(120)[-(1:20)], scales=list(draw=F),
-#                main=NULL, at=seq(-1.35,0.86,(0.86+1.35)/70), 
-#                sp.layout = list(list("sp.polygons", mapCA.utm, first=FALSE, col=gray(0.5)),
-#                                 list("sp.points", epa.STFDF@sp, col=gray(0.25), pch=3, cex=.5)))
-#png(file="img/pred_daily_means_ozone.png", width=9, height=6, "in", res=150)
-#print(stpl)
-#dev.off()
+if(forceRun){
+  # Separated model
+  stpl <- stplot(sepPred, col.regions=bpy.colors(120)[-(1:20)], scales=list(draw=F),
+                 main=NULL, at=seq(-1.35,0.86,(0.86+1.35)/70),
+                 sp.layout = list(list("sp.polygons", mapCA.utm, first=FALSE, col=gray(0.5)),
+                                  list("sp.points", epa.STFDF@sp, col=gray(0.25), pch=3, cex=.5)))
+  png(file="img/pred_daily_means_ozone_sep.png", width=9, height=6, "in", res=150)
+  print(stpl)
+  dev.off()
+
+  # Product-sum model
+  stpl <- stplot(psPred, col.regions=bpy.colors(120)[-(1:20)], scales=list(draw=F),
+                 main=NULL, at=seq(-1.35,0.86,(0.86+1.35)/70),
+                 sp.layout = list(list("sp.polygons", mapCA.utm, first=FALSE, col=gray(0.5)),
+                                  list("sp.points", epa.STFDF@sp, col=gray(0.25), pch=3, cex=.5)))
+  png(file="img/pred_daily_means_ozone_ps.png", width=9, height=6, "in", res=150)
+  print(stpl)
+  dev.off()
+
+  # Sum meteric model
+  stpl <- stplot(sumPred, col.regions=bpy.colors(120)[-(1:20)], scales=list(draw=F),
+                 main=NULL, at=seq(-1.35,0.86,(0.86+1.35)/70),
+                 sp.layout = list(list("sp.polygons", mapCA.utm, first=FALSE, col=gray(0.5)),
+                                  list("sp.points", epa.STFDF@sp, col=gray(0.25), pch=3, cex=.5)))
+  png(file="img/pred_daily_means_ozone_sm.png", width=9, height=6, "in", res=150)
+  print(stpl)
+  dev.off()
+  
+}
 
 ## Simple plots
 stplot(sepPred, col.regions=bpy.colors, scales=list(draw=F),
@@ -254,12 +279,9 @@ k <- 10
 #folds <- cut(sample(1:dim(epa.STFDF)[1]),breaks=k,labels=F)
 #saveRDS(folds, file="data/tmp/folds.RDS")
 folds <- readRDS("data/tmp/folds.RDS")
-par(ask=F) # For showing TS plots en each iteration
+#par(ask=F) # For showing TS plots en each iteration
 
-## Run CV ???
-runCV <- F
-
-if(runCV){
+if(forceRun){
 
   ## Separable model - 50 neighbours
   res <- matrix(NA, dim(epa.STFDF)[1], dim(epa.STFDF)[2])
@@ -287,14 +309,6 @@ if(runCV){
   
   ## product-sum model - 50 neighbours
   res <- matrix(NA, dim(epa.STFDF)[1], dim(epa.STFDF)[2])
-  for(loc in 1:length(DE_RB_2005@sp)) { # loc <- 1
-    cat("Location", loc, "\n")
-    res[loc,!is.na(target[loc,])[,"PM10"]] <- krigeST(PM10~1, data=DE_RB_2005[(1:length(DE_RB_2005@sp))[-loc],], 
-                                                      newdata=DE_RB_2005[loc,,drop=F], 
-                                                      fitProdSumModel, nmax=10,
-                                                      stAni=fitMetricModel$stAni/24/3600)$var1.pred
-  }
-  DE_RB_2005@data$psModel10Nghbr <- as.vector(res)[!is.na(as.vector(res))]
   for(i in 1:k) {
     cat("Fold", i, "\n")
     testIndices <- folds==i
@@ -347,9 +361,11 @@ if(runCV){
       qnorm(0.025, x["sumMetricModel"], sqrt(x["sumMetricModelVar"]))
     })
 
+  #View(epa.STFDF@data)
+  saveRDS(epa.STFDF,file="data/tmp/epa.STFDF.RDS")
+}else{
+  readRDS("data/tmp/epa.STFDF.RDS")
 }
-#View(epa.STFDF@data)
-#save(epa.STFDF,file="data/tmp/epa.STFDF.RDS")
 
 ## Cross-stats
 rbind(
@@ -358,8 +374,5 @@ rbind(
   crossStat("sumMetricModel", digits=2)
 )
 
-
-
-  
 
 
