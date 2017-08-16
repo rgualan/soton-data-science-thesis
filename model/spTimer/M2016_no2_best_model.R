@@ -146,7 +146,15 @@ points(lat~lon,sites[sites$index %in% sites.val, ], col=3)
                & dates.fit$day==dates.val$day[end])
   posT[2] = pos -1
 
-# ## Fit model 
+## Explore points
+plot(coords.knots, col="blue")
+points(lat~lon, coords.fit, col="green")
+points(lat~lon, coords.val, col="red")
+points(lat~lon, cand_coords, col="pink", pch="*") # WTF?
+
+
+    
+## Fit model 
 model.output <- spT.Gibbs(formula=obs~sqrtaqm+fac2+Urban+fac3+RKS, data=fitting_file, model="GPP",
                           coords=coords.fit, knots.coords=coords.knots, newcoords=coords.val,
                           newdata=prediction_file, nItr=10000, nBurn=5000,tol.dist=0.0001, #10000/5000

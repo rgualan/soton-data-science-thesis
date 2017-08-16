@@ -12,7 +12,7 @@ library("forecast")
 library("MASS")
 library("mgcv")
 library("spBayes")
-library("colorspace")
+library("colorspace") 
 library("maps")
 library("MBA")
 library("openair")
@@ -40,7 +40,7 @@ DataValPred <- subset(DataValPred, with(DataValPred, !(Day %in% c(30, 31) & Mont
 NYdata$date <- as.POSIXct(strptime( sprintf("%04d-%02d-%02d",NYdata$Year,NYdata$Month,NYdata$Day),
                                     format="%Y-%m-%d", tz="GMT"))
 summaryPlot(NYdata[,c(-1:-6)], period = "months")
-readline("Continue?")
+#readline("Continue?")
 
 
 # Figure 7

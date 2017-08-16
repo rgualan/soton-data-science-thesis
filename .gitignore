@@ -118,4 +118,6 @@ ENV/
 
 tutorials/
 img/
+logs/
 *.RData
+*.RDS
