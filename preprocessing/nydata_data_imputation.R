@@ -5,6 +5,10 @@ rm(list=ls())
 library(openair)
 library(mgcv)
 library(spTimer)
+source("util/my_helper.R")
+
+## Global variables
+paper <- setupPaper()
 
 ## Load pseudo-locations of the cheap sensors
 #load(file="data/ny_ozone/NYdata.Rdata")
@@ -17,20 +21,20 @@ NYdata$date <- as.POSIXct(strptime( sprintf("%04d-%02d-%02d",NYdata$Year,NYdata$
 ## Deal with missing data ########################################################
 ## Which is the best method for filling small portions of missing data 
 
-## How much missing data are we dealing with?
+## Missing data by station
 sum(is.na(NYdata$o8hrmax))
 nasByStation <- aggregate(o8hrmax~s.index,data=NYdata,
                           FUN=function(x){sum(is.na(x))}, na.action = na.pass)
 #View(nasByStation)
 nasByStation <- nasByStation[order(nasByStation$o8hrmax,decreasing=T),]
 nasByStation[nasByStation$o8hrmax>0,]
-readline("Continue?")
+
 
 
 ## Define train and validation datasets
 trainDs <- na.omit(NYdata)
 summaryPlot(trainDs[,c("o8hrmax","cMAXTMP","WDSP","RH","date")], period="months")
-readline("Continue?")
+
 
 
 ## Approach1: create a general model ########################################################
@@ -39,10 +43,13 @@ readline("Continue?")
 simpleLm <- lm(o8hrmax~cMAXTMP+WDSP+RH, data=trainDs)
 simpleLm2 <- lm(o8hrmax~cMAXTMP+WDSP+RH+Day, data=trainDs)
 simpleLm3 <- lm(o8hrmax~cMAXTMP+WDSP+RH+Longitude*Latitude+Month, data=trainDs)
-plot(trainDs$o8hrmax, type="l", ylab="Ozone")
-lines(predict(simpleLm), col=2, cex=0.5)
-lines(predict(simpleLm2), col=3)
-lines(predict(simpleLm3), col=4)
+
+printPlot(paper, "img/nydata/linear_model.jpeg", 5, 5, FUN=function(){
+  plot(trainDs$o8hrmax, type="l", ylab="Ozone")
+  lines(predict(simpleLm), col=2, cex=0.5)
+  lines(predict(simpleLm2), col=3)
+  lines(predict(simpleLm3), col=4)
+})
 # summary(simpleLm3)
 # Some metrics
 vlm1 <- spT.validation(trainDs$o8hrmax, predict(simpleLm))
@@ -54,7 +61,7 @@ r2lm3 <- cor(predict(simpleLm3), trainDs$o8hrmax)^2
 vlm <- rbind(vlm1,vlm2,vlm3)
 vlm <- cbind( vlm, R2=c(r2lm1,r2lm2,r2lm3) )
 vlm
-readline("Continue?")
+
 
 ## Simple plot to compare the linear models
 pds <- NYdata[NYdata$s.index==7,] # prediction dataset
@@ -62,7 +69,7 @@ plot(pds$o8hrmax, type="l", ylab="Ozone", main="Ozone - Station 7", ylim=c(20,75
 lines(predict(simpleLm,newdata=pds), col=2, cex=0.5)
 lines(predict(simpleLm2,newdata=pds), col=3, cex=0.5)
 lines(predict(simpleLm3,newdata=pds), col=4, cex=0.5)
-readline("Continue?")
+
 
 
 ## GAM model
@@ -92,7 +99,7 @@ vb <- spT.validation(trainDs$o8hrmax, predict(simpleGam))
 vc <- spT.validation(trainDs2$o8hrmax,pred.gp[,1])
 vom <- rbind(va,vb,vc)
 vom
-readline("Continue?")
+
 
 ## Comparison (Station 7)
 testS7 <- NYdata[NYdata$s.index==7, ]
@@ -103,7 +110,7 @@ vb <- spT.validation(target, predict(simpleGam, newdata=testS7))
 vc <- spT.validation(target, pred.gp.7$Mean)
 vom7 <- rbind(va,vb,vc)
 vom7
-readline("Continue?")
+
 
 ## Grafical comparison in a station
 spT.validation(testS7$o8hrmax, pred.gp.7$Mean)
@@ -116,7 +123,7 @@ lines(pred.gp.7$Mean, col=4)
 #lines(pred.gp.7$Mean-pred.gp.7$SD, col=3, lty="dashed")
 legend("topright", legend=c("Obs.","GAM","GP"), 
        lty=rep(1,3), lwd=rep(1,3), col=c(1:3)) # gives the legend lines the correct color and width
-readline("Continue?")
+
 
 ## Observations:
 ## The best general model is GP, despite it does not use the data from the station with 
@@ -203,7 +210,7 @@ t3ValLm <- spT.validation(trainDsS7$o8hrmax, predict(simpleLmS7, newdata = train
 t3ValGp <- spT.validation(trainS7Gp$o8hrmax,pred.gp.S7[,1])
 t3Val <- rbind(t3ValLm, t3ValGp)
 t3Val
-readline("Continue?")
+
 
 ## Plot 
 plot(trainDsS7$o8hrmax, type="l", main="Station 7", ylab="Ozone", xlim=c(0,70), ylim=c(25,80))
@@ -212,7 +219,7 @@ lines(predict(simpleLmS7, newdata = trainDsS7), col="orange", lwd=1)
 lines(pred.gp[,1], col="cyan")
 legend("topright", legend=c("Obs.","LM","GP"), 
        lty=rep(1,3), lwd=rep(1,3), col=c("black", "orange","cyan")) # gives the legend lines the correct color and width
-#readline("Continue?")
+#
 
 
 # Observations:

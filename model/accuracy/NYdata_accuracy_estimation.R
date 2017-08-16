@@ -14,7 +14,7 @@ load("data/ny_ozone/NYcheapPlusNoise.Rdata")
 NYerror <- NYcheap[, c("s.index", "date")]
 NYerror$error <- NYcheapPlusNoise$o8hrmax - NYcheap$o8hrmax
 hist(NYerror$error[NYerror$s.index==100])
-readline("Continue?")
+
 
 
 ## Calculate BIAS
@@ -25,7 +25,7 @@ names(NYerrorAgg) <- c("s.index","Longitude","Latitude","mean.error")
 head(NYerrorAgg)
 coordinates(NYerrorAgg) <- ~Longitude+Latitude
 spplot(NYerrorAgg, "mean.error")
-readline("Continue?")
+
 
 # Calculate SD
 NYerrorAgg <- aggregate(cbind(NYerror$error)~NYerror$s.index

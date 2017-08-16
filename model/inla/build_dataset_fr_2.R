@@ -4,34 +4,35 @@ rm(list=ls())
 # Load libraries
 library(raster)
 library(ncdf4)
+source("util/my_helper.R")
 
 
-# Function for extracting time series from a nc file ##################################
-extractTimeSeriesFromNc <- function(ncFile, dateA, dateB, thePoints){
-  # read the netCDF file as a raster layer
-  r <- raster(ncFile)
-  #r; print(r)
-  
-  covariate <- data.frame( date=c(),Station.ID=c(),tmp=c())
-  #i=1
-  for(i in 1:nbands(r)){
-    #for(i in 1:5){
-    print(i)  
-    r <- raster(ncFile, band=i)
-    z <- as.POSIXct(getZ(r), format="%Y-%m-%d")
-    if(z>=dateA & z<=dateB){
-      print("Processing")
-      vals <- extract(r, thePoints, 
-                      method='bilinear', fun=mean, na.rm=TRUE)
-      tmp <- data.frame( Date=rep(z,length(vals)),
-                         Station.ID=stations$Station.ID,
-                         var=vals)
-      covariate <- rbind(covariate, tmp)
-    }
-  }
-
-  return(covariate)  
-}
+# # Function for extracting time series from a nc file ##################################
+# extractTimeSeriesFromNc <- function(ncFile, dateA, dateB, thePoints){
+#   # read the netCDF file as a raster layer
+#   r <- raster(ncFile)
+#   #r; print(r)
+#   
+#   covariate <- data.frame( date=c(),Station.ID=c(),tmp=c())
+#   #i=1
+#   for(i in 1:nbands(r)){
+#     #for(i in 1:5){
+#     print(i)  
+#     r <- raster(ncFile, band=i)
+#     z <- as.POSIXct(getZ(r), format="%Y-%m-%d")
+#     if(z>=dateA & z<=dateB){
+#       print("Processing")
+#       vals <- extract(r, thePoints, 
+#                       method='bilinear', fun=mean, na.rm=TRUE)
+#       tmp <- data.frame( Date=rep(z,length(vals)),
+#                          Station.ID=stations$Station.ID,
+#                          var=vals)
+#       covariate <- rbind(covariate, tmp)
+#     }
+#   }
+#   
+#   return(covariate)  
+# }
 
 
 
@@ -46,13 +47,12 @@ d$Date <- as.POSIXct(d$Date, format="%Y-%m-%d", tz="UTC")
 stations <- unique(d[,c("Station.ID","Longitude","Latitude")])
 dateA <- min(d$Date)
 dateB <- max(d$Date)
-#dateC <- as.POSIXct("2015-03-01", format="%Y-%m-%d", tz="UTC")
 thePoints <- cbind(stations$Longitude,stations$Latitude)
 
 ## Extract temperature (TMP) ###################################################
 temperature <- extractTimeSeriesFromNc("data/e_obs_grid/tg_0.25deg_reg_v15.0-2015-box.nc", 
-                                       dateA, dateB, thePoints)
-names(temperature)[which(names(temperature)=="var")] <- "TMP" # TODO: Use short name instead
+                                       dateA, dateB, stations, "TMP")
+#names(temperature)[which(names(temperature)=="var")] <- "TMP" # TODO: Use short name instead
 ## Extract RAINFALL (RAIN) ###################################################
 rain <- extractTimeSeriesFromNc("data/e_obs_grid/rr_0.25deg_reg_v15.0-2015-box.nc", 
                                        dateA, dateB, thePoints)

@@ -47,7 +47,7 @@ coords_validation <- coords_validation[coords_validation$Station.ID %in% unique(
 rownames(coords) = coords[,"Station.ID"]
 rownames(coords_validation) = coords_validation[,"Station.ID"]
 
-which_date = unique(Piemonte_data$date)[i_day]
+which_date = unique(Piemonte_data$Date)[i_day]
 print(paste("**---- You will get a prediction for", which_date, "---**"))
 
 ## ################################
@@ -96,11 +96,22 @@ Piemonte_data_validation$time = rep(1:n_days,each = n_stations_val)
 ## ################################
 ## Estimation
 ## ################################
-map('worldHires', c('France'), xlim=c(-4.7,8.1), ylim=c(42.4,51), mar=rep(1,4))	
-points(coords$Longitude, coords$Latitude, pch=16, col="green")
-points(coords_validation$Longitude, coords_validation$Latitude)
-points(coords_validation$Longitude, coords_validation$Latitude, pch=16, col="cyan")
-legend("topleft", c("Training", "Validation"), pch=c(16,16), col=c("green","cyan"))
+library(maptools)
+mapFrance <- map('france', fill = TRUE, plot=F)
+mapFrance <- map2SpatialPolygons(mapFrance, IDs=mapFrance$names, proj4string=CRS("+proj=longlat +datum=WGS84"))
+
+coords_all <- rbind(cbind(coords,Type="Training"),
+                    cbind(coords_validation, Type="Validation"))
+
+ggplot() +
+  geom_polygon(data = mapFrance, aes(x = long, y = lat, group = group), 
+               color = "black", fill = "lightblue", size = 0.25) +
+  geom_point(data = coords_all, 
+             aes(x=Longitude, y=Latitude, fill = Type), 
+             alpha = .75, shape=21, size=2) +
+  coord_fixed()
+
+
 
 ## ################################
 ## Triangulation using borders
