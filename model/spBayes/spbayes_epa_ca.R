@@ -3,44 +3,28 @@ rm(list=ls())
 
 ## Load libraries
 library(spBayes)
+source("util/my_helper.R")
 
-rmvn <- function(n, mu=0, V = matrix(1)){
-  p <- length(mu)
-  if(any(is.na(match(dim(V),p))))
-    stop("Dimension problem!")
-  D <- chol(V)
-  t(matrix(rnorm(n*p), ncol=p)%*%D + rep(mu,rep(n,p)))
-}
-set.seed(1)
+## Read data #######################################################################
+#epa <- readRDS("data/epa/epa_daily/2016/california_ozone.RDS")
+epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
+epa <- epa[order(epa$Station.Code, epa$Date),]
+sites <- getSites(epa)
+## Test
+epa <- addJfield(epa)
+epa$wn <- weekdays(epa$Date)
+## Standardize variable 
+epa$sOzone <- scale(epa$Ozone)
 
+## Split data
+folds <- readRDS("data/tmp/folds.RDS")
+## Fold(1)
+epa.train <- epa[epa$Station.Code %in% sites$Station.Code[folds!=1],] 
+epa.test <- epa[epa$Station.Code %in% sites$Station.Code[folds==1],]
+epa.test$sOzoneH <- NA
 
-n <- 100
-coords <- cbind(runif(n,0,1), runif(n,0,1))
-X <- as.matrix(cbind(1, rnorm(n)))
-B <- as.matrix(c(1,5))
-p <- length(B)
-sigma.sq <- 2
-tau.sq <- 0.1
-phi <- 3/0.5
-
-D	<-	  as.matrix(dist(coords))
-R	  <-	exp(-phi*D)
-w	  <-	rmvn(1, rep(0,n), sigma.sq*R)
-y	  <-	rnorm(n, X%*%B + w, sqrt(tau.sq))
-
-n.samples <- 2000
-starting <- list("phi"=3/0.5, "sigma.sq"=50, "tau.sq"=1)
-
-tuning <- list("phi"=0.1, "sigma.sq"=0.1, "tau.sq"=0.1)
-priors.1 <- list("beta.Norm"=list(rep(0,p), diag(1000,p)),
-                 "phi.Unif"=c(3/1, 3/0.1), "sigma.sq.IG"=c(2, 2),
-                 "tau.sq.IG"=c(2, 0.1))
-priors.2 <- list("beta.Flat", "phi.Unif"=c(3/1, 3/0.1),
-                 "sigma.sq.IG"=c(2, 2), "tau.sq.IG"=c(2, 0.1))
-cov.model <- "exponential"
-n.report <- 500
-verbose <- TRUE
-m.1 <- spLM(y~X-1, coords=coords, starting=starting,
+## Fit GP model ######################################################################
+model <- spLM(sOzone~X-1, coords=coords, starting=starting,
             tuning=tuning, priors=priors.1, cov.model=cov.model,
             n.samples=n.samples, verbose=verbose, n.report=n.report)
 m.2 <- spLM(y~X-1, coords=coords, starting=starting,
