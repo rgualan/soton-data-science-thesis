@@ -191,7 +191,7 @@ if(T){
   
   for ( i in 1:length(days) ){
     print(days[i])
-    a <- idw(Temperature ~ 1, 
+    a <- idw(Temperature ~ Ozone, 
              temp.sp[temp.sp$Date==days[i] & !is.na(temp.sp$Temperature),],  # IN-SAMPLE
              # temp.sp[temp.sp$Station.Code!=s & temp.sp$Date==days[i],],  # OUT_OF_SAMPLE
              newdata=test[test$Date==days[i],], 

@@ -22,6 +22,21 @@ head(sites)
 dim(sites)
 
 
+## Visual help
+plotBadStations <- function(sites, theBadStations){
+  ggplot() + 
+    geom_polygon(aes(x = long, y = lat, group = group), data=getCAmap(), fill = "white", colour = "black") +
+    geom_point(data=sites, aes(x = Longitude, y = Latitude, colour=Location.Setting),
+               alpha = .50, size=0.75, shape=17) +
+    geom_point(data = sites[sites$Station.Code %in% theBadStations,],
+               aes(x = Longitude, y = Latitude), 
+               alpha = .75, size=2, shape=24, fill="red", colour="black") + #
+    labs(x = "Longitude", y = "Latitude", shape="Type") +
+    coord_quickmap() + 
+    theme(legend.position = "top")
+}
+
+
 ## Check close stations and assess correlation 
 detectBadStations<-function(d, maxDistance, threshold, minCount){
   sites <- getSites(d)
@@ -76,20 +91,8 @@ detectBadStations<-function(d, maxDistance, threshold, minCount){
   return(output)
 }
 
-## Visual help
-plotBadStations <- function(sites, theBadStations){
-  ggplot() + 
-    geom_polygon(aes(x = long, y = lat, group = group), data=getCAmap(), fill = "white", colour = "black") +
-    geom_point(data=sites, aes(x = Longitude, y = Latitude, colour=Location.Setting),
-               alpha = .50, size=0.75, shape=17) +
-    geom_point(data = sites[sites$Station.Code %in% theBadStations,],
-               aes(x = Longitude, y = Latitude), 
-               alpha = .75, size=2, shape=24, fill="red", colour="black") + #
-    labs(x = "Longitude", y = "Latitude", shape="Type") +
-    coord_quickmap() + 
-    theme(legend.position = "top")
-}
-
+## Approach 1 
+## All versus all
 if(F){
   badStations1<-detectBadStations(d,50,0.55,2)  
   badStations2<-detectBadStations(d,100,0.4,3)
@@ -110,7 +113,7 @@ if(F){
   ## Recover theBadStations
   #theBadStations<-readRDS("data/tmp/theBadStations.RDS")
   saveRDS(d, file="data/epa/epa_daily/2016/california_ozone_2.RDS")
-
+  
   # ## Recover theBadStations
   # theBadStations<-readRDS("data/tmp/theBadStations.RDS")
   # d<-d[!d$Station.Code %in% theBadStations,]
@@ -120,6 +123,93 @@ if(F){
   # # head(sites)
   # # dim(sites)
   # saveRDS(sites, file="data/epa/epa_daily/2016/california_ozone_sites_2.RDS")
+}
+
+## Assess Pearson correlation metric between  
+## "suspicious" station ts and 
+## the mean ts of k closest neighbours to that station
+detectBadStationsByTrend<-function(d, maxDistance, threshold, plotDetections=F){
+  ## Calculate distance matrix
+  sites <- getSites(d)
+  ks0 <- sites[,c("Station.Code","UTM.X","UTM.Y")] # known sites
+  ks <- ks0[,-1]
+  rownames(ks) <- ks0$Station.Code
+  #head(ks)
+  m <- as.matrix(dist(ks))
+  #dim(m)
+  #m[1:5,1:5]
+
+  ## Iterate over the stations  
+  output <- data.frame()
+  for(s in unique(d$Station.Code)){
+    ## Current station's ts
+    print(paste("Processing",s))
+    tsA <- d[d$Station.Code==s,]
+    tsA <- fillMissingDates(tsA)
+    #View(tsA)
+    
+    ## Get nearest neighbourS
+    actualRow <- m[s,]
+    kIds <- names(actualRow)[actualRow>0 & actualRow<maxDistance]
+    kIds <- kIds[ kIds %in% unique(d$Station.Code) ]
+
+    ## Calculate the trend
+    if(length(kIds)>0){
+      trend <- aggregate(Ozone~Date,d[d$Station.Code %in% kIds,],mean)
+      trend <- fillMissingDates(trend)
+      ## Compare and save
+      r <- cor(tsA$Ozone,trend$Ozone,use="pairwise.complete.obs")^2
+      output <- rbind(output, data.frame(Station=s, r2=r))
+      if(r<threshold & plotDetections){
+        print(r)
+        plot(Ozone~Date, d[d$Station.Code %in% c(s,kIds),], col=0)
+        for(o in kIds){
+          lines(Ozone~Date, d[d$Station.Code==o,], col="gray")
+        }
+        lines(Ozone~Date, tsA, col="red", type="l",lwd=2)
+        readline("Continue?")
+      }
+    }else{
+      output <- rbind(output, data.frame(Station=s, r2=NA))
+    }
+    
+    #if(s=="083-4003") stop("Debug!")
+  }
+  
+  ## Output contains NAs
+  ## Ignore them before return the bad stations
+  output <- output[!is.na(output$r2),]
+  
+  return(output[output$r2<threshold,])
+}
+
+
+
+
+## Approach 2
+## One versus trend
+if(F){
+  badStations1<-detectBadStationsByTrend(d,50, 0.40,F)
+  badStations2<-detectBadStationsByTrend(d,100,0.37,F)
+  #badStations3<-detectBadStationsByTrend(d,200,0.10,F)
+  theBadStationsDF<-rbind(badStations1, badStations2)
+  theBadStations <- theBadStationsDF$Station
+  plotBadStations(sites, theBadStations)
+  
+  ## Manually check/remove:
+  sites[sites$Station.Code %in% theBadStations,c("Station.Code","Elevation","Location.Setting")]
+  #theBadStations <- c(theBadStations, "069-0003", "001-2005")
+  #theBadStations <- c(theBadStations, badStations)
+  #theBadStations <- c(theBadStations, badStationsR)
+  d <- d[!d$Station.Code %in% theBadStations,]
+  length(unique(d$Station.Code))
+  # Save it
+  theBadStations <- unique(theBadStations)
+  length(theBadStations)
+  #saveRDS(theBadStations, file="data/tmp/theBadStations.RDS")
+  ## Recover theBadStations
+  #theBadStations<-readRDS("data/tmp/theBadStations.RDS")
+  saveRDS(d, file="data/epa/epa_daily/2016/california_ozone_2.RDS")
 }
 
 

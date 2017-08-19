@@ -47,13 +47,17 @@ fillMissingDates <- function(d, begin="2016-01-01", end="2016-12-31"){
   
   # Fill mising dates for each station
   complete <- data.frame()
-  for(s in unique(d$Station.Code)){
-    d2 <- d[d$Station.Code==s,]
-    d2 <- merge(d2,data.frame(Date=days), all.y=T)
-    d2$Station.Code[is.na(d2$Station.Code)] <- s
-    complete <- rbind(complete,d2)
+  if("Station.Code" %in% colNames){
+    for(s in unique(d$Station.Code)){
+      d2 <- d[d$Station.Code==s,]
+      d2 <- merge(d2,data.frame(Date=days), all.y=T)
+      d2$Station.Code[is.na(d2$Station.Code)] <- s
+      complete <- rbind(complete,d2)
+    }
+    complete <- complete[,colNames]
+  }else{
+    complete <- merge(d,data.frame(Date=days),all.y=T)
   }
-  complete <- complete[,colNames]
   #View(complete)
 
   return(complete)
@@ -71,12 +75,16 @@ fillMissingDates <- function(d, begin="2016-01-01", end="2016-12-31"){
 convertDataToSp <- function(d, projPar="utm") {
   if(projPar=="utm"){
     p = CRS("+proj=utm +zone=11 +datum=WGS84 +ellps=WGS84 +units=km")
-    newColumns = c("Station.Code","UTM.X","UTM.Y","Elevation")
+    #newColumns = c("Station.Code","UTM.X","UTM.Y","Elevation")
+    newColumns = c("Station.Code","UTM.X","UTM.Y")
     locFormula = ~UTM.X+UTM.Y
+    #if(z) locFormula = ~UTM.X+UTM.Y+Elevation
   }else if(proj=="longlat"){
     p = CRS("+proj=longlat +datum=WGS84")
-    newColumns = c("Station.Code","Longitude","Latitude","Elevation")
+    #newColumns = c("Station.Code","Longitude","Latitude","Elevation")
+    newColumns = c("Station.Code","Longitude","Latitude")
     locFormula = ~Longitude+Latitude
+    #if(z) locFormula = ~Longitude+Latitude+Elevation
   }else{
     stop("Wrong projection parameter")
   }
@@ -85,8 +93,12 @@ convertDataToSp <- function(d, projPar="utm") {
   #   sites <- readRDS("data/epa/sites/aqs_sites.RDS")
   # }
   tmpSites <- getSites(d)
-  d2 <- merge(d, tmpSites[,newColumns]) # , all.x=T # Implicitly ignore stations
-  coordinates(d2) <- locFormula
+  tmpSites <- tmpSites[, newColumns]
+  names(tmpSites)[2:3] <- c("x","y") 
+
+  #d2 <- merge(d, tmpSites[,newColumns]) # , all.x=T # Implicitly ignore stations
+  d2 <- merge(d, tmpSites) # , all.x=T # Implicitly ignore stations
+  coordinates(d2) <- ~x+y
   proj4string(d2) <- p
   
   return(d2)
@@ -303,6 +315,16 @@ getCAmap <- function(proj="longlat"){
   return(mapCA)
 }
 
+## Get days of the year 2016 in Posixct format
+getStudyDays <- function(){
+  # numDays <- as.integer((convertStringToPOSIXct("2016-12-31")
+  #                        -convertStringToPOSIXct("2016-01-01"))+1)
+  days <- seq(from=convertStringToPOSIXct("2016-01-01"), 
+              to=convertStringToPOSIXct("2016-12-31"), by='days' )
+  return(days)
+}
+
+
 ## Calculates goodness of fit
 evaluatePredictions <- function (z, zhat) 
 {
@@ -394,9 +416,106 @@ printPlot <- function(paper=T,file,width=6,height=6,res=150,FUN){
 
 }
 
-
-ticToc <- function(FUN){
+## Simple timer
+ticToc <- function(expr){
   st<-Sys.time()
-  FUN()
+  expr
   Sys.time()-st
 }
+
+
+## Highlight individual station
+highlightStation <- function(s){
+  
+  ggplot(getCAmap()) +
+    geom_polygon(aes(x = long, y = lat, group = group), fill = "white", colour = "black") +
+    geom_point(data = getAllSites(), aes(x = Longitude, y = Latitude, col=Location.Setting), #, fill=Location.Setting
+               alpha = 0.75, shape=17, size=1) +
+    geom_point(data = sites[sites$Station.Code==s,], 
+               aes(x = Longitude, y = Latitude),
+               alpha = 0.75, shape=24, size=2, fill="red") +
+    labs(x = "Longitude", y = "Latitude", fill="Type") +
+    coord_quickmap() +
+    theme(legend.justification = c("right", "top"), legend.position = c(.95, .95),
+          legend.box.background = element_rect(), legend.box.margin = margin(6, 6, 6, 6))
+  
+}
+
+
+getKneighbours<-function(s, sites, k, include_own=F){
+  ## Calculate distance matrix
+  ks0 <- sites[,c("Station.Code","UTM.X","UTM.Y")] # known sites
+  ks <- ks0[,-1]
+  rownames(ks) <- ks0$Station.Code
+  #head(ks)
+  m <- as.matrix(dist(ks))
+  #dim(m)
+  #m[1:5,1:5]
+  
+  ## Get nearest neighbourS
+  actualRow <- m[s,]
+  #kIds <- names(sort(actualRow))[1:(k+1)]
+  kNb <-sort(actualRow)[1:(k+1)]
+
+  #return(kIds[-1])
+  if(!include_own)
+    output <- data.frame(Station.Code=names(kNb[-1]), distance=kNb[-1])
+  else
+    output <- data.frame(Station.Code=names(kNb), distance=kNb)
+  
+  return(output)
+}
+
+getKneighboursInRadius<-function(s, sites, radius, include_own=F){
+  ## Calculate distance matrix
+  ks0 <- sites[,c("Station.Code","UTM.X","UTM.Y")] # known sites
+  ks <- ks0[,-1]
+  rownames(ks) <- ks0$Station.Code
+  #head(ks)
+  m <- as.matrix(dist(ks))
+  #dim(m)
+  #m[1:5,1:5]
+  
+  ## Get nearest neighbourS
+  actualRow <- m[s,]
+  #kIds <- names(sort(actualRow))[1:(k+1)]
+  #kNb <-sort(actualRow)[1:(k+1)]
+  kNb <-sort(actualRow[actualRow<radius])
+  
+  #return(kIds[-1])
+  if(!include_own)
+    output <- data.frame(Station.Code=names(kNb[-1]), distance=kNb[-1])
+  else
+    output <- data.frame(Station.Code=names(kNb), distance=kNb)
+  return(output)
+}
+
+
+plotStations <- function(paper=T, IDS, fileName,width,height, redIds=NA){
+  sites <- getAllSites()
+  sites <- sites[sites$Station.Code %in% IDS,]
+
+  if(!is.na(redIds)){
+    IDS <- IDS[!IDS %in% redIds]
+  }
+    
+  printPlot(paper,fileName,width,height,FUN= function(){
+    p <- ggplot(getCAmap()) +
+      geom_polygon(aes(x = long, y = lat, group = group), fill = "white", colour = "black") +
+      geom_point(data = sites[sites$Station.Code %in% IDS,], aes(x = Longitude, y = Latitude, fill=Location.Setting),
+                 alpha = 0.75, shape=24, size=2) +
+      labs(x = "Longitude", y = "Latitude", fill="Type") +
+      coord_quickmap() +
+      theme(legend.justification = c("right", "top"), legend.position = c(.95, .95),
+             legend.box.background = element_rect(), legend.box.margin = margin(6, 6, 6, 6))
+    if(!is.na(redIds)){
+      p <- p + geom_point(data = sites[sites$Station.Code %in% c(redIds),], 
+                          aes(x = Longitude, y = Latitude),
+                          fill="red", alpha = 0.75, shape=24, size=4)
+    }
+      
+    plot(p)
+  })
+}
+
+

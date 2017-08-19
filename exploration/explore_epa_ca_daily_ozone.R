@@ -254,4 +254,3 @@ if(paper){
     plot(Correlation~Distance,r2[r2$Distance<=50,], ylab="Correlation", xlab="Distance (Km)")
   })
 }
-
