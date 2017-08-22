@@ -1,6 +1,12 @@
 ## Libraries
 library(ggplot2)
 library(sp)
+library(lattice)
+library(RColorBrewer)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+
 
 ## Setup printing figures configuration
 setupPaper <- function(){
@@ -23,7 +29,16 @@ addDoyField <- function(d){
 
 ## Add Day-Of-Week field
 addDowField <- function(d){
-  d$Dow <- as.factor(weekdays(d$Date))
+  d$Dow.name <- weekdays(d$Date)
+  ## Build mapping data.frame
+  Dow.name <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
+  Dow.number <- 1:7
+  dfDow <- data.frame(Dow.name=Dow.name,Dow.number=Dow.number)
+  ## Combine
+  d$Dow.number <- match(d$Dow.name, dfDow$Dow.name)
+  head(d,n=14)
+  ## Change str to factor
+  d$Dow.name <- as.factor(d$Dow.name)
   return(d)
 }
 
@@ -34,7 +49,14 @@ scalePlusBias <- function(column){
   return(column2)    
 }
 
-
+## Get days of the year in Date format
+getDates <- function(dateA="2016-01-01", dateB="2016-12-31"){
+  da <- convertStringToPOSIXct(dateA)
+  db <- convertStringToPOSIXct(dateB)
+  days <- seq(from=da, to=db, by='days')
+  days2 <- as.Date(days)
+  return(days2)
+}
 
 ## Fill missing dates in the original ds 
 fillMissingDates <- function(d, begin="2016-01-01", end="2016-12-31"){
@@ -173,6 +195,20 @@ heatmapPlusTs <- function(d, hm.z.name="Ozone", ts.y.lab="Ozone (ppb)", file.nam
   )
   if(!is.na(file.name)) dev.off()
   
+}
+
+simple_heatmap <- function(d, hm.z.name="Ozone"){
+  # heatmap.z.name
+  p1<-ggplot(d[d$Station.Code %in% sample(unique(d$Station.Code),50),], 
+             aes_string(x="Date", y="Station.Code", fill=hm.z.name)) +
+    geom_raster()  +
+    scale_fill_distiller(palette = "Spectral") +
+    scale_x_datetime(expand=c(0,0)) +
+    labs(x="Date", y = "Station Code") +
+    theme_bw() + 
+    theme(legend.position = "none", panel.grid=element_blank()) 
+  
+  print(p1)
 }
 
 # dtmp<-addCountyColumn(d)

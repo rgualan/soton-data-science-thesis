@@ -10,7 +10,7 @@ library(rgdal)
 library(gstat)
 library(automap)
 source("util/my_helper.R")
-source("preprocessing/gbmImpute.R")
+source("preprocessing/gbmImpute.R") # Dont use library(imputation)
 
 ## Global variables
 paper <- setupPaper()
@@ -37,7 +37,7 @@ data <- epa
 data$sOzone2 <- data$sOzone
 data$sOzone2[data$Station.Code==testStation & 
                data$Date>="2016-05-01" & data$Date<"2016-05-15"] <- NA ## WARNING!!!
-data1 <- data[,c("sOzone2","Temperature","Wind.speed","UTM.X","UTM.Y","Elevation","Location.Setting")]
+data1 <- data[,c("sOzone","Temperature","Wind.speed","UTM.X","UTM.Y","Elevation","Location.Setting")]
 st<-Sys.time()
 fit <- gbmImpute(data1, max.iters = 2, cv.fold = 5, verbose=T)
 Sys.time()-st
