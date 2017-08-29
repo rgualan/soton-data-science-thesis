@@ -4,32 +4,31 @@
 rm(list=ls())
 
 ## Load libraries
-library("spTimer")
-library("akima")
-library("coda")
-library("spacetime")
-library("fields")
-library("forecast")
-library("MASS")
-library("mgcv")
-library("spBayes")
-library("colorspace") 
-library("maps")
-library("MBA")
-library("openair")
+library(spTimer)
+library(akima)
+library(coda)
+library(spacetime)
+library(fields)
+#library(forecast)
+library(MASS)
+library(mgcv)
+library(spBayes)
+library(colorspace) 
+library(maps)
+library(MBA)
+#library(openair)
 source("util/my_helper.R")
 
 
 ## Read data #######################################################################
-#epa <- readRDS("data/epa/epa_daily/2016/california_ozone.RDS")
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
+epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
 epa <- epa[order(epa$Station.Code, epa$Date),]
 sites <- getSites(epa)
 ## Test
-epa <- addJfield(epa)
-epa$wd <- as.factor(weekdays(epa$Date))
+epa <- addDoyField(epa)
+epa <- addDowField(epa)
 ## Standardize variable 
-epa$sOzone <- scale(epa$Ozone)
+epa$sOzone <- scale(epa$Ozone)[,1]
 
 ## Build design matrix ###############################################################
 ## Create additional columns for type factor (method B)
@@ -60,7 +59,7 @@ round(epa[1:5,covariates],2)
 
 
 ## Split data
-folds <- readRDS("data/tmp/folds.RDS")
+folds <- readRDS("output/folds.RDS")
 ## Fold(1)
 epa.train <- epa[epa$Station.Code %in% sites$Station.Code[folds!=1],] 
 epa.test <- epa[epa$Station.Code %in% sites$Station.Code[folds==1],]
@@ -97,9 +96,11 @@ plot(epa.test$sOzone,type="l"); lines(gam.pred,col=2)
 
 
 set.seed(11)
-post.gp <- spT.Gibbs(formula = sOzone ~ 1, data = epa.train, model = "GP", 
-  coords = ~UTM.X+UTM.Y, #scale.transform = "SQRT", 
-  spatial.decay = spT.decay(distribution = Gamm(2,1), tuning = 0.1))
+ticToc({
+  post.gp <- spT.Gibbs(formula = sOzone ~ 1, data = epa.train, model = "GP", 
+                       coords = ~UTM.X+UTM.Y, #scale.transform = "SQRT", 
+                       spatial.decay = spT.decay(distribution = Gamm(2,1), tuning = 0.1))
+})
 #saveRDS(post.gp, file="model/spTimer/post.gp.RDS")
 #post.gp<-readRDS("model/spTimer/post.gp.RDS")
 print(post.gp)
@@ -117,15 +118,15 @@ evaluatePredictions(epa.test$sOzone, c(pred.gp$Median))
 
 ## Figures 8 (a) -- (d)
 ## Check convergence
-dev.new()
-par(mfrow = c(2, 2))
-plot(post.gp$betap[1,], type = "l", main = "Intercept", xlab = "Iterations", ylab = "") #, ylim = c(-1, 6)
-plot(post.gp$betap[2, ], type = "l", main = "cMAXTMP", xlab = "Iterations", ylab = "") # , ylim = c(0.06, 0.25)
-# plot(post.gp$betap[3, ], type = "l", main = "WDSP", xlab = "Iterations", ylab = "")
-# plot(post.gp$betap[4, ], type = "l", main = "RH", xlab = "Iterations", ylab = "")
-par(mfrow = c(1, 1))
-readline("Continue?")
-dev.off()
+# dev.new()
+# par(mfrow = c(2, 2))
+# plot(post.gp$betap[1,], type = "l", main = "Intercept", xlab = "Iterations", ylab = "") #, ylim = c(-1, 6)
+# plot(post.gp$betap[2, ], type = "l", main = "cMAXTMP", xlab = "Iterations", ylab = "") # , ylim = c(0.06, 0.25)
+# # plot(post.gp$betap[3, ], type = "l", main = "WDSP", xlab = "Iterations", ylab = "")
+# # plot(post.gp$betap[4, ], type = "l", main = "RH", xlab = "Iterations", ylab = "")
+# par(mfrow = c(1, 1))
+# readline("Continue?")
+# dev.off()
 
 
 

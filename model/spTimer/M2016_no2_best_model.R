@@ -163,8 +163,8 @@ model.output <- spT.Gibbs(formula=obs~sqrtaqm+fac2+Urban+fac3+RKS, data=fitting_
                           cand_coords=cand_coords1,cand_len=nrow(cand_coords),
                           grid_prob=grid_prob,report=1000,predloc=posT)
 print(model.output)
-save(model.output,file="data/tmp/model.output.no.filter.10000.RData")
-if(!exists("model.output")){load("data/tmp/model.output.RData")}
+save(model.output,file="output/model.output.no.filter.10000.RData")
+if(!exists("model.output")){load("output/model.output.RData")}
 
 
 ##### produces the columns of table 7 ####################################

@@ -123,8 +123,8 @@ fitted = covars.fit %*% param; # 9922 2001
 # }
 # Sys.time()-st
 # fitted_value = fitted_value[,-1];
-# save(fitted, fitted_value, file="data/tmp/fitted.RData")
-load("data/tmp/fitted.RData")
+# save(fitted, fitted_value, file="output/fitted.RData")
+load("output/fitted.RData")
 
 ## Goodness of fit?
 penalty = sum(apply(fitted_value,1,FUN=var)) # var per row
@@ -146,8 +146,8 @@ PMCC = gft + penalty;
 #   predicted_value = cbind(predicted_value, sample^2); # TRANSFORMATION!!!
 # }
 # predicted_value = predicted_value[,-1];
-# save(predicted,predicted_value,file="data/tmp/predicted.RData")
-load("data/tmp/predicted.RData")
+# save(predicted,predicted_value,file="output/predicted.RData")
+load("output/predicted.RData")
 
 
 ## Calculate confidence interval ############################################

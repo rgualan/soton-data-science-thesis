@@ -6,18 +6,17 @@ library(spBayes)
 source("util/my_helper.R")
 
 ## Read data #######################################################################
-#epa <- readRDS("data/epa/epa_daily/2016/california_ozone.RDS")
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
+epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
 epa <- epa[order(epa$Station.Code, epa$Date),]
 sites <- getSites(epa)
-## Test
-epa <- addJfield(epa)
-epa$wn <- weekdays(epa$Date)
+## Add date covariates
+epa <- addDoyField(epa)
+epa <- addDowField(epa)
 ## Standardize variable 
-epa$sOzone <- scale(epa$Ozone)
+epa$sOzone <- scale(epa$Ozone)[,1]  ## scale returns a matrix
 
 ## Split data
-folds <- readRDS("data/tmp/folds.RDS")
+folds <- readRDS("output/folds.RDS")
 ## Fold(1)
 epa.train <- epa[epa$Station.Code %in% sites$Station.Code[folds!=1],] 
 epa.test <- epa[epa$Station.Code %in% sites$Station.Code[folds==1],]

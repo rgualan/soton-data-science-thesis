@@ -2,22 +2,21 @@
 rm(list=ls())
 
 ## Load libraries
-library("spTimer")
+library(spTimer)
 ## These packages will be required to run the code in this file
-library("akima")
-library("coda")
-library("spacetime")
-library("fields")
-library("forecast")
-library("MASS")
-library("mgcv")
-library("spBayes")
-library("colorspace") 
-library("maps")
-library("MBA")
-library("openair")
+library(akima)
+library(coda)
+library(spacetime)
+library(fields)
+library(forecast)
+library(MASS)
+library(mgcv)
+library(spBayes)
+library(colorspace) 
+library(maps)
+library(MBA)
+library(openair)
 
-start.time <- Sys.time()
 
 ##### Real life Example #####
 # Target variable: ground level ozone
@@ -192,5 +191,3 @@ spT.validation(DataValPred$o8hrmax, c(pred.gp$Median))
 ##### Run demo file for NY example #####
 
 ## demo("nyExample") 
-
-print(Sys.time() - start.time)

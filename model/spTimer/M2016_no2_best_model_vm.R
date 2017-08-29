@@ -210,17 +210,17 @@ points(lat~lon,sites[sites$index %in% sites.val, ], col=3)
   if(applyGLFilter){areaName <- "GL"}
   
   save(model.output,
-       file=sprintf("data/tmp/model.output.%s.%d.RData",nIter))
+       file=sprintf("output/model.output.%s.%d.RData",nIter))
   
   print("#########################################################")
   print("Results")
   spT.validation(prediction_file$obs,c(model.output$prediction[,1]))
 #}
 
-#if(!exists("model.output")){load("data/tmp/model.output.RData")}
+#if(!exists("model.output")){load("output/model.output.RData")}
 
 # ## TODO
-# load("data/tmp/model.output.UK.3000.RData")
+# load("output/model.output.UK.3000.RData")
 # 
 # 
 # ##### produces the columns of table 7 ####################################

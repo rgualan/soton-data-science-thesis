@@ -24,7 +24,7 @@ epa$sOzone <- scale(epa$Ozone)
 
 ## Initial test (1 fold) ############################################################
 ## Split data for k=1
-folds <- readRDS("data/tmp/folds.RDS")
+folds <- readRDS("output/folds.RDS")
 ## Fold(1)
 epa.train <- epa[epa$Station.Code %in% sites$Station.Code[folds!=1],] 
 epa.train <- epa.train[!is.na(epa.train$Ozone),] 
@@ -65,8 +65,8 @@ fm <- sOzone ~ Temperature+RH+Rain+Wind+UTM.X+UTM.Y+Elevation+Location.Setting+D
 st <- Sys.time()
 rf.fit <- randomForest(fm, epa.train[!is.na(epa.train$sOzone),], importance=TRUE)
 Sys.time()-st
-saveRDS(rf.fit,file="data/tmp/RF/rf.fit.RDS")
-# rf.fit<-readRDS("data/tmp/RF/rf.fit.RDS")
+saveRDS(rf.fit,file="output/RF/rf.fit.RDS")
+# rf.fit<-readRDS("output/RF/rf.fit.RDS")
 ## Runtime: 42.79235 mins!!!
 
 ## Notes:
