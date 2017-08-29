@@ -3,5 +3,5 @@
 #PBS -l walltime=06:00:00
 cd ~/aq-tngapms/
 module load R
-R --vanilla < model/spatial/kriging.R &> logs/kriging.log
+R --vanilla < model/spatial/tps.R &> logs/tps.log
 
