@@ -13,35 +13,18 @@ smplDays <- sort(sample(365,8))
 ## Libraries
 library(gstat)
 library(spacetime)
-library(rgdal)
+#library(rgdal)
 library(reshape2)
 source("util/my_helper.R")
 
 ## Read data #######################################################################
-#epa <- readRDS("data/epa/epa_daily/2016/california_ozone.RDS")
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
+epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
 epa <- epa[order(epa$Station.Code, epa$Date),]
-# epa.sites <- readRDS("data/epa/epa_daily/2016/california_ozone_sites.RDS")
-# epa.sites <- epa.sites[,c("Station.Code","Longitude","Latitude")]
-# epa <- merge(epa, epa.sites )
-# names(epa)[names(epa)=="Longitude"] <- c("x")
-# names(epa)[names(epa)=="Latitude"] <- c("y")
-#View(epa)
-#View(epa.sites)
 
 
 ## Standardize variable ############################################################
 ## http://machinelearningmastery.com/normalize-standardize-time-series-data-python/
-# hist(epa$Ozone)
-theMean <- mean(epa$Ozone, na.rm=T)
-theSd <- sd(epa$Ozone,na.rm=T)
-epa$Ozone <- (epa$Ozone-theMean)/theSd
-hist(epa$Ozone)
-# ## Re-scale
-# epa$Ozone3 <- epa$Ozone2*theSd+theMean
-# hist(epa$Ozone3)
-# View(epa)
-
+epa$Ozone <- scale(epa$Ozone)
 
 ## Create a SpatialPointsDataFrame ####################################################
 epa.utm <- convertDataToSp(epa,"utm")
@@ -70,15 +53,15 @@ image(epa.matrix, xlab="Stations", ylab="Date")
 epa.sp <- data.frame(unique(data.frame(Station.Code=epa.utm$Station.Code,coordinates(epa.utm))))
 rownames(epa.sp) <- epa.sp$Station.Code
 head(epa.sp)
-coordinates(epa.sp) <- ~UTM.X+UTM.Y
+coordinates(epa.sp) <- ~x+y
 proj4string(epa.sp) <- utm11
 ## Time
 epa.tm <- sort(unique(epa.utm$Date))
 # Combine the objects spatial, data-frame and time-dim into a STIDF:
-epa.STFDF <- STFDF(epa.sp,epa.tm,data.frame(Ozone=as.vector(epa.matrix))) 
-summary(epa.STFDF)
-stplot(epa.STFDF[,"2016-01-01::2016-01-09"])
-dim(epa.STFDF)
+epa.st <- STFDF(epa.sp,epa.tm,data.frame(Ozone=as.vector(epa.matrix))) 
+summary(epa.st)
+stplot(epa.st[,"2016-01-01::2016-01-09"])
+dim(epa.st)
 
 
 ## Exploratory Variogram Analysis ################################################
@@ -93,7 +76,7 @@ hscat(Ozone ~ 1,
       (0:9) * 100)
 
 ## variogram cloud
-empVgm <- variogramST(Ozone~1, data=epa.STFDF, tlags=0:10, na.omit=T)
+empVgm <- variogramST(Ozone~Elevation, data=epa.st, tlags=0:10, na.omit=T)
 plot(empVgm, map=F)
 plot(empVgm, wireframe=T, scales=list(arrows=F))
 
@@ -177,8 +160,8 @@ plot(empVgm, fitSumMetricModel, wireframe=T, all=T, scales=list(arrows=F))
 ## INTERPOLATION #################################################################################
 ## +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## Build a grid over CA
-gridCA <- SpatialGrid(GridTopology(epa.STFDF@sp@bbox[,1]%/%10*10, c(10,10),
-                                   cells.dim=ceiling(apply(epa.STFDF@sp@bbox,1,diff)/10)))
+gridCA <- SpatialGrid(GridTopology(epa.st@sp@bbox[,1]%/%10*10, c(10,10),
+                                   cells.dim=ceiling(apply(epa.st@sp@bbox,1,diff)/10)))
 proj4string(gridCA) <- utm11 
 fullgrid(gridCA) <- F
 
@@ -191,30 +174,30 @@ gridCA <- gridCA[!is.na(ind)]
 # class(gridCA)
 plot(gridCA)
 
-CA_pred <- STF(gridCA, epa.STFDF@time[smplDays])
+CA_pred <- STF(gridCA, epa.st@time[smplDays])
 tIDS <- unique(pmax(1,pmin(as.numeric(outer(-5:5, smplDays, "+")), 365)))
 
-# sepPred <- krigeST(Ozone~1, data=epa.STFDF[,tIDS], 
+# sepPred <- krigeST(Ozone~1, data=epa.st[,tIDS],
 #                    newdata=CA_pred, fitSepModel, nmax=50,
 #                    stAni=linStAni/24/3600) # fitMetricModel$stAni
-# psPred <- krigeST(Ozone~1, data=epa.STFDF[,tIDS], 
+# psPred <- krigeST(Ozone~1, data=epa.st[,tIDS], 
 #                   newdata=CA_pred, fitProdSumModel, nmax=50,
 #                   stAni=linStAni/24/3600)
-# sumPred <- krigeST(Ozone~1, data=epa.STFDF[,tIDS], 
+# sumPred <- krigeST(Ozone~1, data=epa.st[,tIDS], 
 #                    newdata=CA_pred, fitSumMetricModel, nmax=50,
 #                    stAni=fitSumMetricModel$stAni/24/3600)
-# saveRDS(sepPred, file="data/tmp/sepPred.RDS")
-# saveRDS(psPred, file="data/tmp/psPred.RDS")
-# saveRDS(sumPred, file="data/tmp/sumPred.RDS")
-sepPred <- readRDS("data/tmp/sepPred.RDS")
-psPred <- readRDS("data/tmp/psPred.RDS")
-sumPred <- readRDS("data/tmp/sumPred.RDS")
+# saveRDS(sepPred, file="output/sepPred.RDS")
+# saveRDS(psPred, file="output/psPred.RDS")
+# saveRDS(sumPred, file="output/sumPred.RDS")
+sepPred <- readRDS("output/sepPred.RDS")
+psPred <- readRDS("output/psPred.RDS")
+sumPred <- readRDS("output/sumPred.RDS")
 
 # Spatio-temporal model (for the paper)
 # stpl <- stplot(sepPred2, col.regions=bpy.colors(120)[-(1:20)], scales=list(draw=F),
 #                main=NULL, at=seq(-1.35,0.86,(0.86+1.35)/70), 
 #                sp.layout = list(list("sp.polygons", mapCA.utm, first=FALSE, col=gray(0.5)),
-#                                 list("sp.points", epa.STFDF@sp, col=gray(0.25), pch=3, cex=.5)))
+#                                 list("sp.points", epa.st@sp, col=gray(0.25), pch=3, cex=.5)))
 #png(file="img/pred_daily_means_ozone.png", width=9, height=6, "in", res=150)
 #print(stpl)
 #dev.off()
@@ -233,7 +216,7 @@ stplot(sumPred, col.regions=bpy.colors, scales=list(draw=F),
 ## Cross-validation ######################################################################
 ## +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-crossStat <- function(var1, var2="Ozone", STxDF=epa.STFDF, digits=NA) {
+crossStat <- function(var1, var2="Ozone", STxDF=epa.st, digits=NA) {
   diff <- STxDF[,,var1,drop=F]@data[[1]] - STxDF[,,var2,drop=F]@data[[1]]
   RMSE <- sqrt(mean(diff^2,na.rm=T))
   MAE <- mean(abs(diff),na.rm=T)
@@ -251,10 +234,9 @@ crossStat <- function(var1, var2="Ozone", STxDF=epa.STFDF, digits=NA) {
 
 ## 10-CV
 k <- 10
-#folds <- cut(sample(1:dim(epa.STFDF)[1]),breaks=k,labels=F)
-#saveRDS(folds, file="data/tmp/folds.RDS")
-folds <- readRDS("data/tmp/folds.RDS")
-par(ask=F) # For showing TS plots en each iteration
+#folds <- cut(sample(1:dim(epa.st)[1]),breaks=k,labels=F)
+#saveRDS(folds, file="output/folds.RDS")
+folds <- readRDS("output/folds.RDS")
 
 ## Run CV ???
 runCV <- F
@@ -262,31 +244,31 @@ runCV <- F
 if(runCV){
 
   ## Separable model - 50 neighbours
-  res <- matrix(NA, dim(epa.STFDF)[1], dim(epa.STFDF)[2])
+  res <- matrix(NA, dim(epa.st)[1], dim(epa.st)[2])
   for(i in 1:k) {
     cat("Fold", i, "\n")
     testIndices <- folds==i
   
     for(j in which(folds==i)){
-      tmp <- krigeST(Ozone~1, data=epa.STFDF[!testIndices,,1],
-                       newdata=epa.STFDF[j,drop=F], 
+      tmp <- krigeST(Ozone~1, data=epa.st[!testIndices,,1],
+                       newdata=epa.st[j,drop=F], 
                        fitSepModel, nmax=50,
                        stAni=linStAni/24/3600)$var1.pred
-      res[j, !is.na(epa.STFDF[j,])[,1] ] <- tmp
+      res[j, !is.na(epa.st[j,])[,1] ] <- tmp
       # Simple partial assessment
-      tmp2 <- cbind(epa.STFDF[j,][,1],res[j,])
+      tmp2 <- cbind(epa.st[j,][,1],res[j,])
       RMSE <- sqrt(mean((tmp2[,1]-tmp2[,2])^2,na.rm=T))
       COR <- cor(tmp2[,1], tmp2[,2], use = "pairwise.complete.obs")
       print(c(RMSE=RMSE, COR=COR))
       plot(tmp2[,1], type="l"); lines(tmp2[,2],col=2)
     }
   }
-  epa.STFDF@data$sepModel <- as.vector(res)
+  epa.st@data$sepModel <- as.vector(res)
   ## Re-scale TODO
-  #epa.STFDF@data$sepModel10Nghbr <- epa.STFDF@data$sepModel10Nghbr*theSd+theMean
+  #epa.st@data$sepModel10Nghbr <- epa.st@data$sepModel10Nghbr*theSd+theMean
   
   ## product-sum model - 50 neighbours
-  res <- matrix(NA, dim(epa.STFDF)[1], dim(epa.STFDF)[2])
+  res <- matrix(NA, dim(epa.st)[1], dim(epa.st)[2])
   for(loc in 1:length(DE_RB_2005@sp)) { # loc <- 1
     cat("Location", loc, "\n")
     res[loc,!is.na(target[loc,])[,"PM10"]] <- krigeST(PM10~1, data=DE_RB_2005[(1:length(DE_RB_2005@sp))[-loc],], 
@@ -300,62 +282,67 @@ if(runCV){
     testIndices <- folds==i
     
     for(j in which(folds==i)){
-      tmp <- krigeST(Ozone~1, data=epa.STFDF[!testIndices,,1],
-                     newdata=epa.STFDF[j,drop=F], 
+      tmp <- krigeST(Ozone~1, data=epa.st[!testIndices,,1],
+                     newdata=epa.st[j,drop=F], 
                      fitProdSumModel, nmax=50,
                      stAni=linStAni/24/3600)$var1.pred
-      res[j, !is.na(epa.STFDF[j,])[,1] ] <- tmp
+      res[j, !is.na(epa.st[j,])[,1] ] <- tmp
       # Simple partial assessment
-      tmp2 <- cbind(epa.STFDF[j,][,1],res[j,])
+      tmp2 <- cbind(epa.st[j,][,1],res[j,])
       RMSE <- sqrt(mean((tmp2[,1]-tmp2[,2])^2,na.rm=T))
       COR <- cor(tmp2[,1], tmp2[,2], use = "pairwise.complete.obs")
       print(c(RMSE=RMSE, COR=COR))
       plot(tmp2[,1], type="l"); lines(tmp2[,2],col=2)
     }
   }
-  epa.STFDF@data$psModel <- as.vector(res)
+  epa.st@data$psModel <- as.vector(res)
   
   ## Sum-metric model - 50 neighbours
-  res <- array(NA, c(dim(epa.STFDF)[1], dim(epa.STFDF)[2], 2))
+  res <- array(NA, c(dim(epa.st)[1], dim(epa.st)[2], 2))
   for(i in 1:k) {
     cat("Fold", i, "\n")
     testIndices <- folds==i
     
     for(j in which(folds==i)){
-      tmp <- krigeST(Ozone~1, data=epa.STFDF[!testIndices,,1],
-                     newdata=epa.STFDF[j,drop=F], 
+      tmp <- krigeST(Ozone~1, data=epa.st[!testIndices,,1],
+                     newdata=epa.st[j,drop=F], 
                      fitSumMetricModel, nmax=50,
                      computeVar=T,
                      stAni=fitSumMetricModel$stAni/24/3600)@data[,c("var1.pred","var1.var")]
-      res[j, !is.na(epa.STFDF[j,])[,1], ] <- as.matrix(tmp)
+      res[j, !is.na(epa.st[j,])[,1], ] <- as.matrix(tmp)
       # Simple partial assessment
-      tmp2 <- cbind(epa.STFDF[j,][,1], res[j,,1])
+      tmp2 <- cbind(epa.st[j,][,1], res[j,,1])
       RMSE <- sqrt(mean((tmp2[,1]-tmp2[,2])^2,na.rm=T))
       COR <- cor(tmp2[,1], tmp2[,2], use = "pairwise.complete.obs")
       print(c(RMSE=RMSE, COR=COR))
       plot(tmp2[,1], type="l"); lines(tmp2[,2],col=2)
     }
   }
-  epa.STFDF@data$sumMetricModel <- as.vector(res[,,1])
-  epa.STFDF@data$sumMetricModelVar <- as.vector(res[,,2])
-  epa.STFDF@data$sumMetricModel95u <- 
-    apply(epa.STFDF@data, 1, function(x) {
+  epa.st@data$sumMetricModel <- as.vector(res[,,1])
+  epa.st@data$sumMetricModelVar <- as.vector(res[,,2])
+  epa.st@data$sumMetricModel95u <- 
+    apply(epa.st@data, 1, function(x) {
       qnorm(0.975, x["sumMetricModel"], sqrt(x["sumMetricModelVar"]))
     })
-  epa.STFDF@data$sumMetricModel95l <- 
-    apply(epa.STFDF@data, 1, function(x) {
+  epa.st@data$sumMetricModel95l <- 
+    apply(epa.st@data, 1, function(x) {
       qnorm(0.025, x["sumMetricModel"], sqrt(x["sumMetricModelVar"]))
     })
 
 }
-#View(epa.STFDF@data)
-#save(epa.STFDF,file="data/tmp/epa.STFDF.RDS")
+#View(epa.st@data)
+#save(epa.st,file="output/epa.st.RDS")
 
-## Cross-stats
+## CV evaluation metrics
 rbind(
-  crossStat("sepModel", digits=2),
-  crossStat("psModel", digits=2),
-  crossStat("sumMetricModel", digits=2)
+  evaluatePredictions(epa.st[,,"sepModel",drop=F]@data[[1]], 
+                      epa.st[,,"sOzone",drop=F]@data[[1]]),
+  evaluatePredictions(epa.st[,,"psModel",drop=F]@data[[1]], 
+                      epa.st[,,"sOzone",drop=F]@data[[1]]),
+  evaluatePredictions(epa.st[,,"sumMetricModel",drop=F]@data[[1]], 
+                      epa.st[,,"sOzone",drop=F]@data[[1]]),
+  evaluatePredictions(epa.st[,,"prodSumModel",drop=F]@data[[1]], 
+                      epa.st[,,"sOzone",drop=F]@data[[1]])
 )
 
 

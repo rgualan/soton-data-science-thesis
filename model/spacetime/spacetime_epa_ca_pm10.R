@@ -147,8 +147,8 @@ colnames(wind.ST@data) <- "sqrt_speed"
 v2 = vgmST("separable", space = vgm(1, "Exp", 750000), 
           time = vgm(1, "Exp", 1.5 * 3600), sill=0.6)
 epa.ST = krigeST(Var ~ 1, epa.data, pred.grd2, v2) # All data: ~10 min
-#saveRDS(epa.ST, file="data/tmp/epa.ST.RDS")
-#epa.ST = readRDS("data/tmp/epa.ST.RDS")
+#saveRDS(epa.ST, file="output/epa.ST.RDS")
+#epa.ST = readRDS("output/epa.ST.RDS")
 colnames(epa.ST@data) <- "sqrt_var"
 
 ## Then creates the STFDF object with interpolated values

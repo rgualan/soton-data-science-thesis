@@ -50,7 +50,7 @@ summary(epa.STFDF)
 stplot(epa.STFDF[,"2016-01-01::2016-01-09"])
 dim(epa.STFDF)
 
-
+hist(log(epa$Measurement))
 
 
 ## Temporal autocorrelation and cross correlation ################################

@@ -211,14 +211,14 @@ if(forceRun){
   sumPred <- krigeST(Measurement~1, data=epa.STFDF[,tIDS],
                      newdata=CA_pred, fitSumMetricModel, nmax=50,
                      stAni=fitSumMetricModel$stAni/24/3600)
-  saveRDS(sepPred, file="data/tmp/sepPred.RDS")
-  saveRDS(psPred, file="data/tmp/psPred.RDS")
-  saveRDS(sumPred, file="data/tmp/sumPred.RDS")
+  saveRDS(sepPred, file="output/sepPred.RDS")
+  saveRDS(psPred, file="output/psPred.RDS")
+  saveRDS(sumPred, file="output/sumPred.RDS")
 }else{
   ## Load the last saved variables
-  sepPred <- readRDS("data/tmp/sepPred.RDS")
-  psPred <- readRDS("data/tmp/psPred.RDS")
-  sumPred <- readRDS("data/tmp/sumPred.RDS")
+  sepPred <- readRDS("output/sepPred.RDS")
+  psPred <- readRDS("output/psPred.RDS")
+  sumPred <- readRDS("output/sumPred.RDS")
 }
 
 # Spatio-temporal model (for the paper)
@@ -265,8 +265,8 @@ crossStat <- function(var1, var2="Measurement", STxDF=epa.STFDF, digits=NA) {
 ## 10-CV
 k <- 10
 #folds <- cut(sample(1:dim(epa.STFDF)[1]),breaks=k,labels=F)
-#saveRDS(folds, file="data/tmp/folds.RDS")
-folds <- readRDS("data/tmp/folds.RDS")
+#saveRDS(folds, file="output/folds.RDS")
+folds <- readRDS("output/folds.RDS")
 par(ask=F) # For showing TS plots en each iteration
 
 if(forceRun){
@@ -350,9 +350,9 @@ if(forceRun){
     })
 
   #View(epa.STFDF@data)
-  saveRDS(epa.STFDF,file="data/tmp/epa.STFDF.RDS")
+  saveRDS(epa.STFDF,file="output/epa.STFDF.RDS")
 }else{
-  readRDS("data/tmp/epa.STFDF.RDS")
+  readRDS("output/epa.STFDF.RDS")
 }
 
 ## Cross-stats

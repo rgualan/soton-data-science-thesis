@@ -11,17 +11,13 @@ library(gstat)
 #library(automap)
 source("util/my_helper.R")
 
-
 ### Read data ##############################################################################
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
+epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
+sites <- getSites(epa)
 str(epa)
 
 ## Scale dependent variable
 epa$sOzone <- scale(epa$Ozone) 
-sites <- getSites(epa)
-#hist(epa$Ozone)
-#hist(epa$sOzone)
-
 
 ### Purely spatial model #####################################################################
 folds <- readRDS("output/folds.RDS")
@@ -46,14 +42,16 @@ ticToc({
       coordinates(slice.test) <- ~UTM.X+UTM.Y
       proj4string(slice.train) <- getUTMproj()
       proj4string(slice.test) <- getUTMproj()
+  
+      ## IDW
+      g <- gstat(formula = sOzone~1, data = slice.train, nmax=50)
+      ## Kriging
+      ## ~Temperature+Elevation+Dow.number+Doy
+      #g <- gstat(formula = sOzone~Temperature+Elevation, data=slice.train, nmax=50)
       
-      ## Fit model
-      v <- variogram(sOzone~Elevation, slice.train) # calculates sample variogram values 
-      vm <- fit.variogram(v, model=vgm("Sph")) # fit model
-      #plot(v, vm) # plot the sample values, along with the fit model
-      
-      out <- krige(sOzone~Elevation, slice.train, slice.test, model=vm)
-      
+      plot(variogram(g))
+      out <- predict(g, slice.test)
+  
       # ## Diagnostic
       # plot(out)
       # ## Test plots
@@ -70,14 +68,11 @@ ticToc({
     metrics <- rbind(metrics,m)
   }
 })
+
+## Print results
 print("Metrics:")
 print(metrics)
 print("Cross-validation mean:")
 apply(metrics,2,mean)
 ## Save results
-saveRDS(metrics, "output/space/kriging.RDS")
-
-
-
-## Notes:
-## No convergence after 200 iterations: try different initial values?
+saveRDS(metrics, "output/space/idw.RDS")

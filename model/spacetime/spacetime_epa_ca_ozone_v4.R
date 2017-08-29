@@ -22,8 +22,7 @@ paper <- setupPaper()
 
 
 ## Read data #######################################################################
-#epa <- readRDS("data/epa/epa_daily/2016/california_ozone.RDS")
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
+epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
 epa <- epa[order(epa$Station.Code, epa$Date),]
 
 ## Standardize variable ############################################################
@@ -64,7 +63,7 @@ epa.utm <- convertDataToSp(epa,"utm")
 ## HERE THE VARIABLE IS CHOSEN!!!
 epa.matrix <- dcast(epa.utm@data, Date ~ Station.Code, value.var="sOzone2", fill=NA)
 epa.matrix <- as.matrix(epa.matrix[,-1])
-image(epa.matrix, xlab="Stations", ylab="Date")
+#image(epa.matrix, xlab="Stations", ylab="Date")
 ## Space
 epa.sp <- data.frame(unique(data.frame(Station.Code=epa.utm$Station.Code,coordinates(epa.utm))))
 rownames(epa.sp) <- epa.sp$Station.Code
@@ -76,26 +75,11 @@ epa.tm <- sort(unique(epa.utm$Date))
 # Combine the objects spatial, data-frame and time-dim into a STIDF:
 epa.STFDF <- STFDF(epa.sp,epa.tm,data.frame(Ozone=as.vector(epa.matrix))) 
 summary(epa.STFDF)
-stplot(epa.STFDF[,"2016-01-01::2016-01-09"])
-dim(epa.STFDF)
+#stplot(epa.STFDF[,"2016-01-01::2016-01-09"])
+#dim(epa.STFDF)
 
 
-## Simple data imputation (TODO)
-# sum(is.na(epa.matrix))
-# epa.matrix[is.na(epa.matrix)] <- 0
-
-## Exploratory Variogram Analysis ################################################
-data(meuse)
-coordinates(meuse) <- ~x+y
-
-## Scatter plots of pairs Z(si) and Z(sj), grouped according to their 
-## separation distance h
-hscat(log(zinc) ~ 1, meuse, (0:9) * 100)
-hscat(Ozone ~ 1, 
-      epa.utm[epa.utm$Date==sample(epa.utm$Date,1) & !is.na(epa.utm$Ozone),], 
-      (0:9) * 100)
-
-## variogram cloud
+## Empirical variogram
 empVgm <- variogramST(Ozone~1, data=epa.STFDF, tlags=0:7, na.omit=T)
 printPlot(paper,"img/spacetime/empirical_variogram_0.jpeg",6,6,FUN=function(){
   print(plot(empVgm, map=F))
@@ -225,8 +209,8 @@ proj4string(gridCA) <- getUTMproj()
 fullgrid(gridCA) <- F
 
 # ind <- over(gridCA, as(getCAmap(proj="utm"),"SpatialPolygons"))
-# saveRDS(ind, file="data/tmp/spacetime/ind.RDS")
-ind<-readRDS("data/tmp/spacetime/ind.RDS")
+# saveRDS(ind, file="output/spacetime/ind.RDS")
+ind<-readRDS("output/spacetime/ind.RDS")
 
 gridCA <- gridCA[!is.na(ind)]
 # class(gridCA)
@@ -256,14 +240,14 @@ if(forceRun){
                      stAni=fitSumMetricModel$stAni/24/3600,
                      progress=F)
   Sys.time()-st
-  saveRDS(sepPred, file="data/tmp/spacetime/sepPred.RDS")
-  saveRDS(psPred, file="data/tmp/spacetime/psPred.RDS")
-  saveRDS(sumPred, file="data/tmp/spacetime/sumPred.RDS")
+  saveRDS(sepPred, file="output/spacetime/sepPred.RDS")
+  saveRDS(psPred, file="output/spacetime/psPred.RDS")
+  saveRDS(sumPred, file="output/spacetime/sumPred.RDS")
 }else{
   ## Load the last saved variables
-  sepPred <- readRDS("data/tmp/spacetime/sepPred.RDS")
-  psPred <- readRDS("data/tmp/spacetime/psPred.RDS")
-  sumPred <- readRDS("data/tmp/spacetime/sumPred.RDS")
+  sepPred <- readRDS("output/spacetime/sepPred.RDS")
+  psPred <- readRDS("output/spacetime/psPred.RDS")
+  sumPred <- readRDS("output/spacetime/sumPred.RDS")
 }
 
 # Spatio-temporal model (for the paper)
@@ -313,7 +297,7 @@ if(!paper){
 ## 10-fold cross-validation ######################################################################
 ## +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 k <- 10
-folds <- readRDS("data/tmp/folds.RDS")
+folds <- readRDS("output/folds.RDS")
 #par(ask=F) # For showing TS plots en each iteration
 
 if(forceRun){
@@ -406,9 +390,9 @@ if(forceRun){
   Sys.time()-st
   
   #View(epa.STFDF@data)
-  saveRDS(epa.STFDF,file="data/tmp/spacetime/epa.STFDF.RDS")
+  saveRDS(epa.STFDF,file="output/spacetime/epa.STFDF.RDS")
 }else{
-  readRDS("data/tmp/spacetime/epa.STFDF.RDS")
+  readRDS("output/spacetime/epa.STFDF.RDS")
 }
 
 ## Cross-stats

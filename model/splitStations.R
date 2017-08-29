@@ -12,16 +12,15 @@ source("util/my_helper.R")
 ## Settings ##########################################################################
 paper <- F
 
-
 ## Read data #########################################################################
 epa_ozone <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
 sites <- getSites(epa_ozone)
 
-
 ## Split 10-fold CV ##################################################################
 #folds <- cut(sample(1:nrow(sites)),breaks=10,labels=F)
-#saveRDS(folds, file="data/tmp/folds.RDS")
-folds <- readRDS("data/tmp/folds.RDS")
+#saveRDS(folds, file="output/folds.RDS")
+folds <- readRDS("output/folds.RDS")
+length(folds)
 
 ## Simple splitting ##################################################################
 sites$Test <- "Training"
@@ -37,4 +36,5 @@ ggplot(sites) +
   theme(legend.justification = c("right", "top"), legend.position = c(.95, .95),
         legend.box.background = element_rect(), legend.box.margin = margin(6, 6, 6, 6))
 if(paper) dev.off()
+
 
