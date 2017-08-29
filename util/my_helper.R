@@ -42,6 +42,15 @@ addDowField <- function(d){
   return(d)
 }
 
+## Add Day-Of-Week field
+addIsWeekDay <- function(d){
+  d$isWeekday <- T
+  d$isWeekday[d$Dow.name %in% c("Saturday","Sunday")] <- F
+  d$isWeekday <- as.factor(d$isWeekday)
+  return(d)
+}
+
+
 ## Scale variable and add a Bias that avoids negative values
 scalePlusBias <- function(column){
   column2 <- scale(column)
@@ -234,7 +243,7 @@ simple_heatmap <- function(d, hm.z.name="Ozone"){
 
 ## Creates a time series plot
 ## with a confidence interval of 0.05 to 0.95 percetiles
-timeSeriesPlotWithInterval <- function(d, var.name="Ozone", label="Ozone (ppb)", file.name=NA){
+timeSeriesPlotWithInterval <- function(d, var.name="Ozone", label="Ozone (ppb)", file.name=NA, xLabel=T){
   ## Daily mean
   f=formula(paste0(var.name,"~Date"))
   dailyAgg <- aggregate(f,d,mean) # daily mean
@@ -247,21 +256,19 @@ timeSeriesPlotWithInterval <- function(d, var.name="Ozone", label="Ozone (ppb)",
   
   p2<-ggplot(dailyAgg, aes(Date, mean)) + 
     geom_smooth(aes(ymax=upper, ymin=lower), stat='identity') +
-    #scale_x_datetime(expand=c(0,0)) +
-    #scale_y_continuous(expand=c(0,0)) +
-    labs(x = "Date", y = label) #+
-    # theme_bw() + 
-    # theme(panel.grid=element_blank(),
-    #       plot.margin=unit(c(0.1,0.5,0.5,0.5),"cm")) 
-
-  if(!is.na(file.name)) jpeg(file.name, 6, 4, "in", bg="white", res=150)
-  print(p2)
-  if(!is.na(file.name)) dev.off()
+    labs(y = label)
+  if(xLabel){
+    p2 <- p2 + labs(x = "Date")
+  }else{
+    p2 <- p2 + theme(axis.title.x=element_blank(),
+                    axis.text.x=element_blank() #,axis.ticks.x=element_blank()
+                    )
+  }
   
+  #if(!is.na(file.name)) jpeg(file.name, 6, 4, "in", bg="white", res=150)
+  print(p2)
+  #if(!is.na(file.name)) dev.off()
 }
-
-
-
 
 ## Extracts time series from a nc file
 ## nfile: an ncFile
@@ -362,28 +369,28 @@ getStudyDays <- function(){
 
 
 ## Calculates goodness of fit
-evaluatePredictions <- function (z, zhat) 
+evaluatePredictions <- function (z, zhat, n=3) 
 {
   VMSE <- function(z, zhat) {
     z <- as.matrix(z)
     zhat <- as.matrix(zhat)
     x <- c(z - zhat)
     u <- x[!is.na(x)]
-    round(sum(u^2)/length(u), 4)
+    round(sum(u^2)/length(u), n)
   }
   RMSE <- function(z, zhat) {
     z <- as.matrix(z)
     zhat <- as.matrix(zhat)
     x <- c(z - zhat)
     u <- x[!is.na(x)]
-    round(sqrt(sum(u^2)/length(u)), 4)
+    round(sqrt(sum(u^2)/length(u)), n)
   }
   MAE <- function(z, zhat) {
     z <- as.matrix(z)
     zhat <- as.matrix(zhat)
     x <- abs(c(zhat - z))
     u <- x[!is.na(x)]
-    round(sum(u)/length(u), 4)
+    round(sum(u)/length(u), n)
   }
   MAPE <- function(z, zhat) {
     z <- as.matrix(z)
@@ -391,21 +398,21 @@ evaluatePredictions <- function (z, zhat)
     x <- abs(c(zhat - z))/z
     u <- x[!is.na(x)]
     u <- u[!is.infinite(u)]
-    round(sum(u)/length(u) * 100, 4)
+    round(sum(u)/length(u) * 100, n)
   }
   BIAS <- function(z, zhat) {
     z <- as.matrix(z)
     zhat <- as.matrix(zhat)
     x <- c(zhat - z)
     u <- x[!is.na(x)]
-    round(sum(u)/length(u), 4)
+    round(sum(u)/length(u), n)
   }
   rBIAS <- function(z, zhat) {
     z <- as.matrix(z)
     zhat <- as.matrix(zhat)
     x <- c(zhat - z)
     u <- x[!is.na(x)]
-    round(sum(u)/(length(u) * mean(z, na.rm = TRUE)), 4)
+    round(sum(u)/(length(u) * mean(z, na.rm = TRUE)), n)
   }
   rMSEP <- function(z, zhat) {
     z <- as.matrix(z)
@@ -414,13 +421,12 @@ evaluatePredictions <- function (z, zhat)
     u <- x[!is.na(x)]
     y <- c(mean(zhat, na.rm = TRUE) - z)
     v <- y[!is.na(y)]
-    round(sum(u^2)/sum(v^2), 4)
+    round(sum(u^2)/sum(v^2), n)
   }
   r2 <- function(z, zhat) {
     a <- cor(z,zhat,use="pairwise.complete.obs")^2
-    round(a, 4)
+    round(a, n)
   }
-  r2(1:10,2:11)
   #cat("##\n Mean Squared Error (MSE) \n Root Mean Squared Error (RMSE) \n Mean Absolute Error (MAE) \n Mean Absolute Percentage Error (MAPE) \n Bias (BIAS) \n Relative Bias (rBIAS) \n Relative Mean Separation (rMSEP)\n##\n")
   out <- NULL
   out$MSE <- VMSE(c(z), c(zhat))
@@ -431,7 +437,8 @@ evaluatePredictions <- function (z, zhat)
   out$rBIAS <- rBIAS(c(z), c(zhat))
   out$rMSEP <- rMSEP(c(z), c(zhat))
   out$r2 <- r2(c(z), c(zhat))
-  unlist(out)
+  out <- unlist(out)
+  return(round(out, digits=n))
 }
 
 
@@ -456,7 +463,7 @@ printPlot <- function(paper=T,file,width=6,height=6,res=150,FUN){
 ticToc <- function(expr){
   st<-Sys.time()
   expr
-  Sys.time()-st
+  print(Sys.time()-st)
 }
 
 
@@ -530,11 +537,11 @@ getKneighboursInRadius<-function(s, sites, radius, include_own=F){
 plotStations <- function(paper=T, IDS, fileName,width,height, redIds=NA){
   sites <- getAllSites()
   sites <- sites[sites$Station.Code %in% IDS,]
-
+  
   if(!is.na(redIds)){
     IDS <- IDS[!IDS %in% redIds]
   }
-    
+  
   printPlot(paper,fileName,width,height,FUN= function(){
     p <- ggplot(getCAmap()) +
       geom_polygon(aes(x = long, y = lat, group = group), fill = "white", colour = "black") +
@@ -542,16 +549,70 @@ plotStations <- function(paper=T, IDS, fileName,width,height, redIds=NA){
                  alpha = 0.75, shape=24, size=2) +
       labs(x = "Longitude", y = "Latitude", fill="Type") +
       coord_quickmap() +
-      theme(legend.justification = c("right", "top"), legend.position = c(.95, .95),
-             legend.box.background = element_rect(), legend.box.margin = margin(6, 6, 6, 6))
+      theme(legend.justification = c("right", "top"), 
+            legend.position = c(.95, .95),
+            legend.box.background = element_rect()#, 
+            #legend.box.margin = margin(6, 6, 6, 6)
+      )
     if(!is.na(redIds)){
       p <- p + geom_point(data = sites[sites$Station.Code %in% c(redIds),], 
                           aes(x = Longitude, y = Latitude),
                           fill="red", alpha = 0.75, shape=24, size=4)
     }
-      
+    
     plot(p)
   })
 }
 
 
+## Assemble STFDF 
+assembleSTFDF <- function(epa){
+  ## Space dimension
+  epa.sp <- getSites(epa)
+  epa.sp <- epa.sp[,c("Station.Code","Latitude","Longitude","Location.Setting","UTM.X","UTM.Y")]
+  rownames(epa.sp) <- epa.sp$Station.Code
+  head(epa.sp)
+  coordinates(epa.sp) <- ~UTM.X+UTM.Y
+  proj4string(epa.sp) <- getUTMproj()
+  
+  ## Time dimension
+  epa.tm <- sort(unique(epa$Date))
+  epa.tm <- as.Date(epa.tm)  ## Ignore time data?? >> Corrects x labels problem in acf
+  
+  ## Data
+  epa_2 <- epa[,c("Date","Ozone","sOzone","Temperature",
+                  "RH","Rain","logRain","Wind","sqrtWind","Elevation")]
+  ## TODO: Sort?
+  
+  # Combine the objects spatial, data-frame and time-dim into a STIDF:
+  epa.st <- STFDF(epa.sp,epa.tm,epa_2) 
+  # summary(epa.st)
+  # stplot(epa.st[,"2016-01-01::2016-01-08","sOzone"])
+  # dim(epa.st)
+
+  return(epa.st)  
+}
+
+## Function to get the goodness-of-fit metrics by station 
+getMetricsByStation <- function(epa.st,colName1,colName2){
+  metrics = c()
+  for(s in 1:dim(epa.st)[1]){
+    m <- evaluatePredictions(as.vector(epa.st[s,,colName1][,1]), 
+                             as.vector(epa.st[s,,colName2][,1]))
+    metrics <- rbind(metrics,m)
+    rownames(metrics)[nrow(metrics)] <- as.character(epa.st@sp[s,]$Station.Code)
+  }
+  return(metrics)
+}
+
+## Function to get the goodness-of-fit metrics by station (from a data.frame) 
+getMetricsByStationFromDF <- function(epa,colName1,colName2){
+  metrics = c()
+  for(s in unique(epa$Station.Code)){
+    m <- evaluatePredictions(epa[epa$Station.Code==s,colName1], 
+                             epa[epa$Station.Code==s,colName2])
+    metrics <- rbind(metrics,m)
+    rownames(metrics)[nrow(metrics)] <- as.character(as.character(s))
+  }
+  return(metrics)
+}
