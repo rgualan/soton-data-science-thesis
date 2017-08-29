@@ -71,7 +71,7 @@ for(i in 1:length(rds)){
 #apply(epa[epa$Station.Code==testStation,],2,function(x){sum(is.na(x))})
 #apply(epa[epa$Station.Code!=testStation,],2,function(x){sum(is.na(x))})
 epaGbm <- epa[!is.na(epa$Temperature),]
-X <- epaGbm[,c("sOzone2","Temperature","UTM.X","UTM.Y","Elevation","Location.Setting","Doy","Dow")]
+X <- epaGbm[,c("sOzone2","Temperature","UTM.X","UTM.Y","Elevation","Location.Setting","Doy","Dow.name")]
 #apply(X,2,function(x){sum(is.na(x))})  
 
 ## Generalized Boosted Regression 
@@ -99,8 +99,8 @@ epaGp$Temperature <- imputeTS::na.ma(epaGp$Temperature)
 
 ticToc(
   simpleGp <- spT.Gibbs(
-    #formula = sOzone2~Temperature+Elevation+Location.Setting+Doy+Dow,
-    formula = sOzone2~Temperature+Elevation+Doy+Dow,
+    #formula = sOzone2~Temperature+Elevation+Location.Setting+Doy+Dow.number,
+    formula = sOzone2~Temperature+Elevation+Doy+Dow.number,
     model = "GP",
     data = epaGp[epaGp$Station.Code!=testStation,], 
     coords = ~Longitude + Latitude, #scale.transform = "SQRT",
@@ -122,9 +122,9 @@ simpleGp.pred <- predict(simpleGp, newdata=epaGp[epaGp$Station.Code==testStation
 # to weight the neighbors according to their distances.  In fact, not only kernel functions but every
 # monotonic decreasing will work fine.
 # Is used in rattle
-epaKnn <- epa[,c("Station.Code","sOzone2","Temperature","Elevation","Doy","Dow")]
+epaKnn <- epa[,c("Station.Code","sOzone2","Temperature","Elevation","Doy","Dow.number")]
 #epaKnn[,-1] <- scale(epaKnn[,-1])
-fit.kknn <- kknn(sOzone2 ~ Temperature+Elevation+Doy+Dow, 
+fit.kknn <- kknn(sOzone2 ~ Temperature+Elevation+Doy+Dow.number, 
                  epaKnn[epaKnn$Station.Code!=testStation & !is.na(epaKnn$sOzone),], 
                  epaKnn[epaKnn$Station.Code==testStation,])
 epaKnn$sOzone5[epaKnn$Station.Code==testStation] <- fit.kknn$fitted.values
@@ -156,14 +156,14 @@ test2 <- rbind(data.frame(Date=test$Date,Ozone=test$sOzone,Type="Original", Flag
                data.frame(Date=test$Date,Ozone=test$sOzone4,Type="GP", Flag=F),
                data.frame(Date=test$Date,Ozone=test$sOzone5,Type="KKNN", Flag=F))
 
-printPlot(paper, "img/preprocessing/idw/ts_ozone_others.jpeg",7,3, FUN=function(){ 
+printPlot(paper, "img/preprocessing/idw/ts_ozone_others.jpeg",7,4, FUN=function(){ 
   p<-ggplot(test2, aes(x=Date, y=Ozone, colour=Type)) + 
     annotate("rect",
              xmin=test2$Date[test2$Flag]-1*24*60*60,
              xmax=test2$Date[test2$Flag]+1*24*60*60,
              ymin=-Inf, ymax=Inf, alpha=0.75, fill="lightyellow") +
     geom_line() + 
-    theme(legend.justification = c("top")) + 
+    theme(legend.position = "top") + 
     labs(y="Scaled(Ozone)")
   print(p)
 })
@@ -174,7 +174,7 @@ mGp <- evaluatePredictions(test$sOzone[is.na(test$sOzone2)], test$sOzone4[is.na(
 mKknn <- evaluatePredictions(test$sOzone[is.na(test$sOzone2)], test$sOzone5[is.na(test$sOzone2)])
 metrics <- rbind(mGbm,mGp,mKknn)
 rownames(metrics) <- c("gbm","gp","kknn")
-metrics
+round(metrics, digits = 3)
 
 ## Notes:
 ## Imputation is not Interpolation

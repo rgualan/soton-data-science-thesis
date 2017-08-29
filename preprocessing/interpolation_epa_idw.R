@@ -81,6 +81,7 @@ Sys.time()-st
 metricsDf <- data.frame(mean=apply(metrics,2,mean),
                         min=apply(metrics,2,min),
                         max=apply(metrics,2,max))
+round(metricsDf, digits=3)
 
 ## Manual assessment ##################################################################
 #plot(metrics[order(metrics[,8]),8])
@@ -99,27 +100,31 @@ n5 <- merge(getKneighbours(s, sites, 5, T),sites); n5[order(n5$distance),]
 nd <- merge(getKneighboursInRadius(s, sites, 75, T),sites); nd[order(nd$distance),];
 range(nd$Elevation)
 ## Time series
-tsPredictionPlot <- function(paper,epa.sp,prefix,s){
+tsPredictionPlot <- function(paper,epa.sp,prefix,s,width=7,height=3,printLegend=F){
   tmp <- epa.sp[epa.sp$Station.Code==s,]
   tmp2 <- rbind(data.frame(Date=tmp$Date,Ozone=tmp$sOzone,Type="Original"),
                 data.frame(Date=tmp$Date,Ozone=tmp$sOzoneH,Type="Interpolated"))
   
-  printPlot(paper, paste0(prefix,s,".jpeg"),7,3, FUN=function(){ 
+  printPlot(paper, paste0(prefix,s,".jpeg"),width,height, FUN=function(){ 
     p<-ggplot(tmp2, aes(x=Date, y=Ozone, colour=Type)) + 
       annotate("rect",
                xmin=tmp2$Date[is.na(tmp2$Ozone)]-1*24*60*60,
                xmax=tmp2$Date[is.na(tmp2$Ozone)]+1*24*60*60,
                ymin=-Inf, ymax=Inf, alpha=0.75, fill="lightyellow") +
       geom_line() + 
-      theme(legend.justification = c("top")) + 
       labs(y="Scaled(Ozone)")
+    if(printLegend){
+      p <- p + theme(legend.position = "top") 
+    }else{
+      p <- p + theme(legend.position = "none") 
+    }
     print(p)
   })
 }
 
-tsPredictionPlot(paper,epa.sp,"img/preprocessing/idw/ozone_",ss[1])
-tsPredictionPlot(paper,epa.sp,"img/preprocessing/idw/ozone_",ss[2])
-tsPredictionPlot(paper,epa.sp,"img/preprocessing/idw/ozone_",ss[3])
+tsPredictionPlot(paper,epa.sp,"img/preprocessing/idw/ozone_",ss[1],7,4,T)
+tsPredictionPlot(paper,epa.sp,"img/preprocessing/idw/ozone_",ss[2],7,3.5,F)
+tsPredictionPlot(paper,epa.sp,"img/preprocessing/idw/ozone_",ss[3],7,3.5,F)
 
 ## Three cases 
 printPlot(paper, "img/preprocessing/idw/cases.jpeg",6,6,FUN=function(){

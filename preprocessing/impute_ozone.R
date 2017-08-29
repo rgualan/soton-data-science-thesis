@@ -19,9 +19,11 @@ epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
 ## Add date covariates
 epa <- addDoyField(epa)
 epa <- addDowField(epa)
+epa <- addIsWeekDay(epa)
 ## Sites
 sites <- getSites(epa)
 #str(epa)
+
 
 ## Simple imputation of Ozone ################################################
 covByStation <- aggregate(cbind(Ozone,Temperature)~Station.Code,epa,length)
@@ -238,20 +240,24 @@ plotImputations <- function(paper, s, epa){
 }
 
 ## Apply the imputation method to all the stations
-covByStation <- aggregate(cbind(Ozone)~Station.Code,epa,length)
-covByStation <- covByStation[covByStation$Ozone<366,]
-covByStation <- covByStation[order(covByStation$Ozone),]
-#View(covByStation)
-
-epa$Ozone2 <- NA
-for(s in covByStation$Station.Code){
-  print(sprintf("Impute %s",s))
-  out <- imputeNasByStation(s, epa, "Temperature+Elevation+Dow.number+Doy")
-  #out$metrics
-  epa$Ozone2[epa$Station.Code==s] <- out$prediction
-  epa$Ozone.trend[epa$Station.Code==s] <- out$trend
-  ## Plot  
-  plotImputations(paper,s,epa)
+if(F){
+  covByStation <- aggregate(cbind(Ozone)~Station.Code,epa,length)
+  covByStation <- covByStation[covByStation$Ozone<366,]
+  covByStation <- covByStation[order(covByStation$Ozone),]
+  #View(covByStation)
+  
+  epa$Ozone2 <- NA
+  for(s in covByStation$Station.Code){
+    print(sprintf("Impute %s",s))
+    out <- imputeNasByStation(s, epa, "Temperature+Elevation+Dow.number+Doy")
+    #out$metrics
+    epa$Ozone2[epa$Station.Code==s] <- out$prediction
+    epa$Ozone.trend[epa$Station.Code==s] <- out$trend
+    ## Plot  
+    plotImputations(paper,s,epa)
+  }
+  ## Save imputed dataset
+  saveRDS(epa, "data/epa/epa_daily/2016/california_ozone_plus_rcov_2.RDS")
 }
 
 ## Print results (all at onece)
@@ -261,7 +267,30 @@ if(F){
   }
 }
 
-## Save imputed dataset
-saveRDS(epa, "data/epa/epa_daily/2016/california_ozone_plus_rcov_2.RDS")
 
+## Metrics
+epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_2.RDS")
+epa
+sum(is.na(epa$Ozone2))
+head(epa)
+
+nasByStation <- aggregate(Ozone~Station.Code,epa,length)
+nasByStation <- nasByStation[nasByStation$Ozone<366,]
+nrow(nasByStation)
+epa_sub <- epa[epa$Station.Code %in% nasByStation$Station.Code,]
+#View(epa_sub)
+apply(epa_sub[,c("Ozone","Ozone2")],2,function(x){sum(is.na(x))})
+nrow(epa_sub)
+
+(metrics <- evaluatePredictions(epa_sub$Ozone,epa_sub$Ozone2,3))
+
+
+## Replace missing values in Ozone ######################################################
+#epa$Ozone3 <- epa$Ozone
+ii <- is.na(epa$Ozone)
+epa$Ozone[ii] <- epa$Ozone2[ii]
+#View(epa[epa$Station.Code %in% nasByStation$Station.Code,c("Ozone","Ozone2","Ozone3")])
+#apply(epa,2,function(x){sum(is.na(x))})
+epa <- epa[,!names(epa) %in% c("Flag","Ozone2","Ozone.trend")]
+saveRDS(epa, "data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
 
