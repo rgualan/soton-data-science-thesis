@@ -121,3 +121,4 @@ img/
 logs/
 *.RData
 *.RDS
+Rplots.pdf

@@ -63,20 +63,21 @@ d <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
 head(d)
 
 # Plots
-printPlot(T,"img/eda/narr_ozone.jpeg",6,4,FUN=function(){
-  timeSeriesPlotWithInterval(d, "Ozone", "Ozone (ppb)")
+w<-7; h<-2.5
+printPlot(T,"img/eda/reanalysis/narr_ozone.jpeg",w,h,FUN=function(){
+  timeSeriesPlotWithInterval(d, "Ozone", "Ozone (ppb)", xLabel = F)
 })
-printPlot(T,"img/eda/narr_temperature.jpeg",6,4,FUN=function(){
-  timeSeriesPlotWithInterval(d, "Temperature", "Temperature (K)")
+printPlot(T,"img/eda/reanalysis/narr_temperature.jpeg",w,h,FUN=function(){
+  timeSeriesPlotWithInterval(d, "Temperature", "Temperature (K)", xLabel = F)
 })
-printPlot(T,"img/eda/narr_rh.jpeg",6,4,FUN=function(){
-  timeSeriesPlotWithInterval(d, "RH", "Relative Humidity (%)")
+printPlot(T,"img/eda/reanalysis/narr_rh.jpeg",w,h,FUN=function(){
+  timeSeriesPlotWithInterval(d, "RH", "Relative Humidity (%)", xLabel = F)
 })
-printPlot(T,"img/eda/narr_rain.jpeg",6,4,FUN=function(){
-  timeSeriesPlotWithInterval(d, "Rain", "Rain (Kg/m2)")
+printPlot(T,"img/eda/reanalysis/narr_wind.jpeg",w,h,FUN=function(){
+  timeSeriesPlotWithInterval(d, "Wind", "Wind (m/s)", xLabel = F)
 })
-printPlot(T,"img/eda/narr_wind.jpeg",6,4,FUN=function(){
-  timeSeriesPlotWithInterval(d, "Wind", "Wind (m/s)")
+printPlot(T,"img/eda/reanalysis/narr_rain.jpeg",w,h,FUN=function(){
+  timeSeriesPlotWithInterval(d, "Rain", "Rain (Kg/m2)", xLabel = T)
 })
 
 

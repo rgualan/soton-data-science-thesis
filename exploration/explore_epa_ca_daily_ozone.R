@@ -107,7 +107,9 @@ printPlot(paper,"img/eda/ca_ozone.jpeg",6,6,FUN= function(){
     labs(x = "Longitude", y = "Latitude", fill="Type") +
     coord_quickmap() +
     theme(legend.justification = c("right", "top"), legend.position = c(.95, .95),
-          legend.box.background = element_rect(), legend.box.margin = margin(6, 6, 6, 6))
+          legend.box.background = element_rect()#, 
+          #legend.box.margin = margin(6, 6, 6, 6)
+    )
   plot(p)
 })
 
@@ -254,3 +256,7 @@ if(paper){
     plot(Correlation~Distance,r2[r2$Distance<=50,], ylab="Correlation", xlab="Distance (Km)")
   })
 }
+
+
+## Stations by Location.setting
+(aggByType <- aggregate(Station.Code~Location.Setting,sites,length))
