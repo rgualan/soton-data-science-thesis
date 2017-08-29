@@ -16,8 +16,10 @@ mKst1 <- readRDS("output/spacetime/sepModel.metrics.RDS")
 mKst2 <- readRDS("output/spacetime/psModel.metrics.RDS")
 mKst3 <- readRDS("output/spacetime/metricModel.metrics.RDS")
 mKst4 <- readRDS("output/spacetime/sumMetricModel.metrics.RDS")
+## spTimer-GP
+mGp <- readRDS("output/spTimer/out.metrics.RDS")
 ## RF
-mRf <- readRDS("output/RF/rfp.metricsout.RDS")
+mRf <- readRDS("output/RF/rfp.metrics.RDS")
 
 ## Comparison table ########################################################################
 mainTable <-rbind(apply(mK1,2,mean),
@@ -28,8 +30,9 @@ mainTable <-rbind(apply(mK1,2,mean),
                   apply(mKst2,2,mean),
                   apply(mKst3,2,mean),
                   apply(mKst4,2,mean),
+                  apply(mGp,2,mean),
                   apply(mRf,2,mean))
-rownames(mainTable) <- c("KSP-A","KSP-B","IDW","TPS","KST-A","KST-B","KST-C","KST-D","RF")
+rownames(mainTable) <- c("KSP-A","KSP-B","IDW","TPS","KST-A","KST-B","KST-C","KST-D","GP","RF")
 round(mainTable,3)
 
 ## Boxplot RMSE by Model ##################################################################

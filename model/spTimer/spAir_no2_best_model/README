@@ -1,0 +1,8 @@
+no2_best_model.R was provided by Sabyasachi Mukhopadhyay <sabymstat@gmail.com>
+who corrected the bugs
+
+It achieved good goodness-of-fit meterics.
+But, it looks inmature
+
+Biggest problem: cand_coords
+Dense points covering some parts of England 

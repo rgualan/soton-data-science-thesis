@@ -1,11 +1,10 @@
-
 ##### This code produces the parameter estimates of the best model mentioned in Table 7. The code requires installation of the software spAir. 
 
 #########
 library(spAir)
 
 ###### reading the data files #######################################
-spcheck1<-read.table("data/aurn/AURN_data_07_11.txt",header=T)
+spcheck1<-read.table("model/spTimer/spAir_no2_best_model/data/AURN_data_07_11.txt",header=T)
 
 position<-which(is.na(spcheck1$aqum_no2)==TRUE);
 spcheck1$aqum_no2[position]=mean(spcheck1$aqum_no2,na.rm=T);

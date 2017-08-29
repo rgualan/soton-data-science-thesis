@@ -102,6 +102,7 @@ ENV/
 
 # Data
 /data/
+/data.big/
 
 #PyCharm
 .idea

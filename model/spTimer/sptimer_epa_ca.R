@@ -5,17 +5,17 @@ rm(list=ls())
 
 ## Load libraries
 library(spTimer)
-library(akima)
-library(coda)
-library(spacetime)
-library(fields)
+#library(akima)
+#library(coda)
+#library(spacetime)
+#library(fields)
 #library(forecast)
-library(MASS)
+#library(MASS)
 library(mgcv)
 library(spBayes)
-library(colorspace) 
+#library(colorspace) 
 library(maps)
-library(MBA)
+#library(MBA)
 #library(openair)
 source("util/my_helper.R")
 
@@ -54,11 +54,7 @@ covariates <- c("Temperature", "RH", "fac2", "SuburbanTemp", "SuburbanRH",
 round(epa[1:5,covariates],2)
 
 
-
-
-
-
-## Split data
+## Split data ####################################################################
 folds <- readRDS("output/folds.RDS")
 ## Fold(1)
 epa.train <- epa[epa$Station.Code %in% sites$Station.Code[folds!=1],] 
@@ -68,7 +64,7 @@ epa.test$sOzoneH <- NA
 
 
 
-## Simple LM (test) 
+## Simple LM (test) ##############################################################
 set.seed(11)
 f1 <- sOzone~Temperature+RH+UTM.X*UTM.Y+j+wd+Location.Setting # 0.4214 
 f2 <- sOzone~Temperature+UTM.X*UTM.Y # 0.3622
@@ -78,7 +74,8 @@ summary(lm.fit)
 lm.pred <- predict(lm.fit, epa.test, interval="prediction")
 evaluatePredictions(epa.test$sOzone, lm.pred[,1])
 plot(epa.test$sOzone,type="l"); lines(lm.pred[,1],col=2)
-## Simple GAM model (test) 
+
+## Simple GAM model (test) ########################################################
 gam.fit <- gam(sOzone ~ s(RH), # + s(RH) + s(UTM.X, UTM.Y) + s(cMAXTMP) + s(WDSP) + s(RH) +  # , k = 10
                data = epa.train)
 gam.pred <- predict(gam.fit, epa.test, interval="prediction")
@@ -93,13 +90,12 @@ plot(epa.test$sOzone,type="l"); lines(gam.pred,col=2)
 
 
 ## Fit GP model ######################################################################
-
-
 set.seed(11)
 ticToc({
   post.gp <- spT.Gibbs(formula = sOzone ~ 1, data = epa.train, model = "GP", 
                        coords = ~UTM.X+UTM.Y, #scale.transform = "SQRT", 
-                       spatial.decay = spT.decay(distribution = Gamm(2,1), tuning = 0.1))
+                       spatial.decay = spT.decay(distribution = Gamm(2,1), tuning = 0.1),
+                       report=10)
 })
 #saveRDS(post.gp, file="model/spTimer/post.gp.RDS")
 #post.gp<-readRDS("model/spTimer/post.gp.RDS")
