@@ -12,14 +12,11 @@ paper = setupPaper()
 
 ## Read data #######################################################################
 epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
-epa <- epa[order(epa$Station.Code, epa$Date),]
+epa <- addDateDerivedFeatures(epa)
+epa <- addNeighboursAverage(epa,5)
+epa <- transformFeatures(epa)
+epa <- scaleTargetVariable(epa)
 sites <- getSites(epa)
-## Feature engineering (time dimension)
-epa <- addDoyField(epa)
-epa <- addDowField(epa)
-epa <- addIsWeekDay(epa)
-## Standardize variable 
-epa$sOzone <- scale(epa$Ozone)[,1]
 
 ## Notes
 ## A single fold takes 42.79235 mins!
@@ -30,18 +27,24 @@ epa$sOzone <- scale(epa$Ozone)[,1]
 # trees, at least for initial exploration, or restrict the complexity of each tree
 # using nodesize as well as reduce the number of rows sampled with sampsize
 
-fm <- sOzone ~ Temperature+RH+Rain+sqrtWind+UTM.X+UTM.Y+Elevation+Location.Setting+Doy+Dow.name+Dow.number+isWeekday
-folds <- readRDS("output/folds.RDS")
-metrics = c()
+#fm <- sOzone ~ Temperature+RH+Rain+sqrtWind+UTM.X+UTM.Y+Elevation+Location.Setting+Doy+Dow.name+Dow.number+isWeekday
+fm <- sOzone ~ Temperature+Dew.Point+Water.Evap+
+  Geop.Height+Geop.Height.Tropo+
+  Tropo.Press+Press.MSL+Longitude+Latitude+Elevation+
+  Location.Setting+Doy+Neighbor
 
 ## 10-fold cross validation #################################################################################
+folds <- getFolds()
+metrics = c()
+
 cl <- makeCluster(11, outfile="")
-clusterExport(cl, c("epa","sites","paper","fm","folds","metrics","ticToc"))
+clusterExport(cl, c("epa","sites","paper","fm","metrics"))
 tryCatch({
   out <- clusterApply(cl, 1:10, function(k){
     library(randomForest)
     source("util/my_helper.R")
 
+    folds <- getFolds()
     print(paste("Fold",k,paste(rep("=",50),collapse = "")))
 
     ## Split data
@@ -73,14 +76,14 @@ tryCatch({
 })
 
 ## Save results
-saveRDS(out, "output/RF/out.p.RDS")
-#out <- readRDS("output/RF/out.p.RDS")
-
-## Calculate metrics
+## Data frame with the OOS predictions
 epa.out <- do.call("rbind", out)
-## Overall results
-# print("Overall results:")
-# print(evaluatePredictions(epa.out$sOzone,epa.out$sOzoneH))
+saveRDS(epa.out, "output/RF/rfp.out.RDS")
+#out <- readRDS("output/RF/rfp.out.RDS")
+
+## Overall metrics
+print(evaluatePredictions(epa.out$sOzone,epa.out$sOzoneH))
+
 ## Metrics
 metrics <- getMetricsByStationFromDF(epa.out,"sOzone","sOzoneH")
 saveRDS(metrics, "output/RF/rfp.metrics.RDS")

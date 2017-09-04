@@ -11,22 +11,25 @@ paper = setupPaper()
 
 ## Read data #######################################################################
 epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
-epa <- epa[order(epa$Station.Code, epa$Date),]
+epa <- addDateDerivedFeatures(epa)
+epa <- addNeighboursAverage(epa,5)
+epa <- transformFeatures(epa)
+epa <- scaleTargetVariable(epa)
 sites <- getSites(epa)
-## Feature engineering (time dimension)
-epa <- addDoyField(epa)
-epa <- addDowField(epa)
-epa <- addIsWeekDay(epa)
-## Standardize variable 
-epa$sOzone <- scale(epa$Ozone)
 
 ## General ############################################################################
-folds <- readRDS("output/folds.RDS")
-fm <- sOzone ~ Temperature+RH+Rain+sqrtWind+UTM.X+UTM.Y+Elevation+Location.Setting+Doy+Dow.name+Dow.number+isWeekday
+folds <- getFolds()
+# fm <- sOzone ~ Temperature+RH+Rain+sqrtWind+UTM.X+UTM.Y+Elevation+
+#   Location.Setting+Doy+Dow.name+Dow.number+isWeekday
+
+fm <- sOzone ~ Temperature+Dew.Point+Water.Evap+
+  Geop.Height+Geop.Height.Tropo+
+  Tropo.Press+Press.MSL+Longitude+Latitude+Elevation+
+  Location.Setting+Doy+Neighbor
 
 # ## Test (Fold-1) ####################################################################
 # ## Split data for k=1
-# folds <- readRDS("output/folds.RDS")
+# folds <- getFolds()
 # ## Fold-1
 # epa.train <- epa[epa$Station.Code %in% sites$Station.Code[folds!=1],] 
 # epa.test <- epa[epa$Station.Code %in% sites$Station.Code[folds==1],]

@@ -58,8 +58,8 @@ if(F){
 
 
 
-## EDA of the predictoros extracted from the NetCDF files ##############################
-d <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
+## EDA of the predictors extracted from the NetCDF files ##############################
+d <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
 head(d)
 
 # Plots

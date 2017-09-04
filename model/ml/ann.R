@@ -1,7 +1,7 @@
 ## Clean environment
 rm(list=ls())
 
-## Load libraries
+## Libraries
 library(caret)
 library(nnet)
 source("util/my_helper.R")
@@ -9,50 +9,36 @@ source("util/my_helper.R")
 ## Global variables
 paper = setupPaper()
 
-
-## Read data #######################################################################
-#epa <- readRDS("data/epa/epa_daily/2016/california_ozone.RDS")
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
-epa <- epa[order(epa$Station.Code, epa$Date),]
+## Read data ########################################################################
+epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
+epa <- addDateDerivedFeatures(epa)
+epa <- transformFeatures(epa)
+epa$sOzone <- scale(epa$Ozone)[,1]
+epa <- addNeighboursAverage(epa,5)
 sites <- getSites(epa)
-## Feature engineering
-epa <- addDoyField(epa)
-epa <- addDowField(epa)
-## Standardize variable 
-epa$sOzone <- scale(epa$Ozone)
-
 
 ## Initial test (1 fold) ############################################################
-## Split data for k=1
-folds <- readRDS("output/folds.RDS")
-## Fold(1)
+folds <- getFolds()
 epa.train <- epa[epa$Station.Code %in% sites$Station.Code[folds!=1],] 
-epa.train <- epa.train[!is.na(epa.train$Ozone),] 
 epa.test <- epa[epa$Station.Code %in% sites$Station.Code[folds==1],]
-epa.test$sOzoneH <- NA
 
 ## Reduce amount of data
-epa.train <- epa.train[epa.train$Date<"2016-01-31",]
-
+#epa.train <- epa.train[epa.train$Date<"2016-01-31",]
 
 ## Parameter tunning
-fitControl <- trainControl(## 10-fold CV
-  method = "repeatedcv",
-  number = 10,
-  ## repeated ten times
-  repeats = 1)
-
-set.seed(825)
-st<-Sys.time()
-nn.fit <- train(sOzone ~ Temperature+RH+Rain+Wind+Longitude+Latitude+Elevation
-                 +Location.Setting+Doy+Dow, data = epa.train, 
-                 method = "neuralnet", 
-                 trControl = fitControl, layer1=5, layer2=0, layer3=0)
-Sys.time()-st
-nn.fit
-
+fmB <- sOzone ~ Temperature+Dew.Point+Water.Evaporation+
+  Geopotential.Height+Geopotential.Height.Tropo+#Heat.Flux
+  Tropopause.Press+Press.MSL+Longitude+Latitude+Elevation+
+  Location.Setting+Doy+Neighbor
+fitControl <- trainControl(method = "repeatedcv", number = 10, repeats = 1)
+ticToc({
+  set.seed(825)
+  annModel <- train(fmB, data = epa.train, method = "neuralnet", trControl = fitControl, layer1=10, layer2=0, layer3=0)
+})
+annModel
 ## Notes:
 ## The final values used for the model were layer1 = 5, layer2 = 0 and layer3 = 0.
+## Something is wrong; all the RMSE metric values are missing:
 
 
 
