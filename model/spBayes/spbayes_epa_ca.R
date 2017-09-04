@@ -16,7 +16,7 @@ epa <- addDowField(epa)
 epa$sOzone <- scale(epa$Ozone)[,1]  ## scale returns a matrix
 
 ## Split data
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 ## Fold(1)
 epa.train <- epa[epa$Station.Code %in% sites$Station.Code[folds!=1],] 
 epa.test <- epa[epa$Station.Code %in% sites$Station.Code[folds==1],]

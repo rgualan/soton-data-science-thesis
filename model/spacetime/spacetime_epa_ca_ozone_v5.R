@@ -328,7 +328,7 @@ runFold <- function(k, folds, fm, epa.st, outputColumnName, model, linStAni, nma
 }
 
 k <- 1 # TODO!
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 if(forceRun){
   epa.st <- runFold(k, folds, fm, epa.st, "sepModel", fitSepModel, linStAni, nmax=50)
   epa.st <- runFold(k, folds, fm, epa.st, "psModel", fitProdSumModel, linStAni, nmax=50)

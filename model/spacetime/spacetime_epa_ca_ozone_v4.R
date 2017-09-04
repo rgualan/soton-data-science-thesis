@@ -297,7 +297,7 @@ if(!paper){
 ## 10-fold cross-validation ######################################################################
 ## +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 k <- 10
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 #par(ask=F) # For showing TS plots en each iteration
 
 if(forceRun){

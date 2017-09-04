@@ -49,7 +49,7 @@ index_data=sites$Station.Code;
 len_index=length(index_data);
 
 ## Split data
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 ## Fold(1)
 epa.train <- epa[epa$Station.Code %in% sites$Station.Code[folds!=1],] 
 epa.test <- epa[epa$Station.Code %in% sites$Station.Code[folds==1],]

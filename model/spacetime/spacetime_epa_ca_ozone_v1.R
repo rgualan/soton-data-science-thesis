@@ -236,7 +236,7 @@ crossStat <- function(var1, var2="Ozone", STxDF=epa.st, digits=NA) {
 k <- 10
 #folds <- cut(sample(1:dim(epa.st)[1]),breaks=k,labels=F)
 #saveRDS(folds, file="output/folds.RDS")
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 
 ## Run CV ???
 runCV <- F

@@ -22,7 +22,7 @@ epa$sOzone <- scale(epa$Ozone)
 #hist(epa$sOzone)
 
 ### Purely spatial model #####################################################################
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 days = seq(min(epa$Date),max(epa$Date),by="days")
 
 ## 10-fold cross validation

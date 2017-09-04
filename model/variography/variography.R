@@ -144,13 +144,22 @@ dim(epa.st)
 ## Select 4 random stations/names (arbitrarily)
 #rn <- sample(row.names(epa.st@sp),4)
 rn <- row.names(epa.st@sp)[114:117] # random names
-plotStations(paper, rn, "img/variogram/rnd_stations.jpeg", 6, 6)
+plotStations(paper, rn, "img/variogram/rnd_stations.jpeg", 6, 6, fill=2)
+# Distances
+ks0 <- sites[sites$Station.Code %in% rn,c("Station.Code","UTM.X","UTM.Y")]
+ks <- ks0[,-1]
+rownames(ks) <- ks0$Station.Code
+#head(ks)
+m <- as.matrix(dist(ks))
+m[m==0] <- NA
+min(m, na.rm=T)
+max(m, na.rm=T)
 
 ## Temporal autocorrelation and cross-correlation functions ##############################################################
 printPlot(paper,"img/acf/tm_acf_4s.jpeg",5,5, FUN=function(){
   par(mfrow=c(2,2))
   for(s in rn){
-    acf(na.omit(epa.st[s,,"sOzone"][,1]), main = s, lag.max = 15)
+    acf(na.omit(epa.st[s,,"sOzone"][,1]), main = s, lag.max = 20)
   }
   par(mfrow=c(1,1))
 })
@@ -160,6 +169,7 @@ printPlot(paper,"img/acf/tm_acf_4s.jpeg",5,5, FUN=function(){
 printPlot(paper,"img/acf/tm_ccf_4s.jpeg",5,5, FUN=function(){
   acf(na.omit(as(epa.st[rn,,"sOzone"], "xts")))
 })
+
 ## Notes:
 # The plot further more shows that for these four stations the asymmetry is not
 # very strong, but that cross correlations are fairly strong and of a similar form
@@ -331,7 +341,7 @@ printPlot(paper,"img/variogram/all.jpeg",7,5,FUN=function(){
 
 
 ## Prediction #####################################################################
-#folds <- readRDS("output/folds.RDS")
+#folds <- getFolds()
 folds <- cut(sample(1:nrow(sites)),breaks=10,labels=F)
 testIndices <- folds==1
 j = which(testIndices)[1]

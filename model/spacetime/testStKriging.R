@@ -107,7 +107,7 @@ test_st_kriging_using_10cv <- function(fm, epa.st, tlags, paper, expName=NA){
 
   ## 10-fold CV  
   k <- 10
-  folds <- readRDS("output/folds.RDS")
+  folds <- getFolds()
   epa.st <- runFold(k, folds, fm, epa.st, "sepModel", fitSepModel, linStAni, nmax=50, expName)
   epa.st <- runFold(k, folds, fm, epa.st, "psModel", fitProdSumModel, linStAni, nmax=50, expName)
   epa.st <- runFold(k, folds, fm, epa.st, "sumMetricModel", fitSumMetricModel, linStAni, nmax=50, expName) ## TODO: the var
@@ -189,7 +189,7 @@ test_st_kriging_using_1fold <- function(fm, epa.st, tlags, paper, expName=NA){
   
   ## 10-fold CV  
   k <- 10
-  folds <- readRDS("output/folds.RDS")
+  folds <- getFolds()
   epa.st <- runFold(1, folds, fm, epa.st, "sepModel", fitSepModel, linStAni, nmax=50, expName)
   epa.st <- runFold(1, folds, fm, epa.st, "metricModel", fitMetricModel, linStAni, nmax=50, expName)
   epa.st <- runFold(1, folds, fm, epa.st, "psModel", fitProdSumModel, linStAni, nmax=50, expName)

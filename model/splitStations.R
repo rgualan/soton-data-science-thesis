@@ -13,13 +13,14 @@ source("util/my_helper.R")
 paper <- F
 
 ## Read data #########################################################################
-epa_ozone <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
+epa_ozone <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
 sites <- getSites(epa_ozone)
 
 ## Split 10-fold CV ##################################################################
+#set.seed(204)
 #folds <- cut(sample(1:nrow(sites)),breaks=10,labels=F)
 #saveRDS(folds, file="output/folds.RDS")
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 length(folds)
 
 ## Simple splitting ##################################################################

@@ -25,28 +25,29 @@ epa <- addDowField(epa)
 ## Standardize variable 
 epa$sOzone <- scale(epa$Ozone)[,1]
 
+## Reduce the size of the data for testing purposes
+epa <- epa[epa$Station.Code %in% sort(unique(epa$Station.Code))[1:20],]
+plotStations(F, unique(epa$Station.Code))
+
 ## Build design matrix ###############################################################
 ## Create additional columns for type factor (method B)
 ## The Rural factor is the base
 ## The other types are addicional information ???
-epa$fac2 <- 0
-epa$SuburbanTemp <- 0
-epa$SuburbanRH <- 0
-epa$fac3 <- 0
-epa$UrbanTemp <- 0
-epa$UrbanRH <- 0
-epa$fac2[epa$Location.Setting=="SUBURBAN"] <- 1
-epa$SuburbanTemp[epa$Location.Setting=="SUBURBAN"] <- epa$Temperature[epa$Location.Setting=="SUBURBAN"]
-epa$SuburbanRH[epa$Location.Setting=="SUBURBAN"] <- epa$RH[epa$Location.Setting=="SUBURBAN"]
-epa$fac3[epa$Location.Setting=="URBAN"] <- 1
-epa$UrbanTemp[epa$Location.Setting=="URBAN"] <- epa$Temperature[epa$Location.Setting=="URBAN"]
-epa$UrbanRH[epa$Location.Setting=="URBAN"] <- epa$RH[epa$Location.Setting=="URBAN"]
-#aggregate(fac2~Location.Setting,epa,sum)
-#epa=epa[,names(epa) != "Location.Setting"]; # Del Location.Setting
-
-covariates <- c("Temperature", "RH", "fac2", "SuburbanTemp", "SuburbanRH", 
-                "fac3", "UrbanTemp", "UrbanRH")
-round(epa[1:5,covariates],2)
+# epa$fac2 <- 0
+# epa$SuburbanTemp <- 0
+# epa$SuburbanRH <- 0
+# epa$fac3 <- 0
+# epa$UrbanTemp <- 0
+# epa$UrbanRH <- 0
+# epa$fac2[epa$Location.Setting=="SUBURBAN"] <- 1
+# epa$SuburbanTemp[epa$Location.Setting=="SUBURBAN"] <- epa$Temperature[epa$Location.Setting=="SUBURBAN"]
+# epa$SuburbanRH[epa$Location.Setting=="SUBURBAN"] <- epa$RH[epa$Location.Setting=="SUBURBAN"]
+# epa$fac3[epa$Location.Setting=="URBAN"] <- 1
+# epa$UrbanTemp[epa$Location.Setting=="URBAN"] <- epa$Temperature[epa$Location.Setting=="URBAN"]
+# epa$UrbanRH[epa$Location.Setting=="URBAN"] <- epa$RH[epa$Location.Setting=="URBAN"]
+# covariates <- c("Temperature", "RH", "fac2", "SuburbanTemp", "SuburbanRH", 
+#                 "fac3", "UrbanTemp", "UrbanRH")
+# round(epa[1:5,covariates],2)
 
 
 ## 10-fold cross validation #################################################################################
@@ -69,9 +70,12 @@ tryCatch({
     epa.test$sOzoneH <- NA  ## For the prediction
     
     ## Fit model
+    time.data<-spT.time(t.series=366,segments=1)
+    
     ticToc({
       post.gp <- spT.Gibbs(formula = fm, data = epa.train, model = "GP", 
-                           coords = ~UTM.X+UTM.Y, 
+                           coords = ~UTM.X+UTM.Y, time.data=time.data,
+                           newdata=epa.test, newcoords=~UTM.X+UTM.Y,
                            spatial.decay = spT.decay(distribution = Gamm(2,1), tuning = 0.1),
                            report=2)
     })
@@ -79,14 +83,12 @@ tryCatch({
     summary(post.gp)
 
     ## Prediction
-    ticToc({
-      pred.gp <- predict(post.gp, newdata=epa.test, newcoords=~UTM.X+UTM.Y)
-    })
     epa.test$sOzoneH <- c(pred.gp$Median)
     ## Fold metrics
     m <- evaluatePredictions(epa.test$sOzone, epa.test$sOzoneH)
     print(sprintf("Fold-%d. Metrics:",k))
     print (m)
+    stop("debug!")
     
     return(epa.test)
   })

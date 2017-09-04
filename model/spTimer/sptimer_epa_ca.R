@@ -8,15 +8,10 @@ library(spTimer)
 #library(akima)
 #library(coda)
 #library(spacetime)
-#library(fields)
-#library(forecast)
-#library(MASS)
 library(mgcv)
 library(spBayes)
-#library(colorspace) 
 library(maps)
 #library(MBA)
-#library(openair)
 source("util/my_helper.R")
 
 
@@ -55,7 +50,7 @@ round(epa[1:5,covariates],2)
 
 
 ## Split data ####################################################################
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 ## Fold(1)
 epa.train <- epa[epa$Station.Code %in% sites$Station.Code[folds!=1],] 
 epa.test <- epa[epa$Station.Code %in% sites$Station.Code[folds==1],]

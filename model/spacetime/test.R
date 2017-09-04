@@ -120,7 +120,7 @@ runFold <- function(k, folds, fm, epa.st, outputColumnName, model, linStAni, nma
 }
 
 k <- 1 # TODO!
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 epa.st <- runFold(k, folds, fm, epa.st, "psModel", fitProdSumModel, linStAni, nmax=50)
 #saveRDS(epa.st,file="output/spacetime/epa.st.RDS")
 

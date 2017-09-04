@@ -18,8 +18,8 @@ source("model/spacetime/fitCovarianceModels.R")
 
 ## Global variables ##########################################################
 forceRun <- T # Run heavy weight processing
-paper <- setupPaper() # Print the plots in image format for the paper
 debugLevel <- F # Present additional debugging information
+paper <- setupPaper() # Print the plots in image format for the paper
 
 ## Read data #################################################################
 epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
@@ -38,7 +38,8 @@ epa.st <- assembleSTFDF(epa)
 
 ## Covariance models #########################################################
 fm <- sOzone~Elevation+Temperature
-tlags <- 0:7
+#tlags <- 0:7
+tlags <- c(0,5,10,15)
 
 ticToc({
   covModels <- fitCovarianceModels(epa.st, fm, tlags, paper)
@@ -53,7 +54,7 @@ linStAni <- covModels$linStAni
 ## Run 10-fold CV in parallel ###############################################################
 ## One CPU per model
 k <- 10
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 modelNames <- c("sepModel", "psModel", "metricModel", "sumMetricModel")
 models <- list(fitSepModel, fitMetricModel, fitProdSumModel, fitSumMetricModel)
 
@@ -84,10 +85,9 @@ for(idx in 1:length(modelNames)){
 }
 
 ## Assess metrics ###############################################################################
-out <- readRDS("output/spacetime/10cv.out.RDS")
-metricsByModel <- list()
+#out <- readRDS("output/spacetime/10cv.out.RDS")
 for(idx in 1:length(modelNames)){
-  print(idx)
+  #print(idx)
   metrics <- getMetricsByStation(out[[idx]],"sOzone",modelNames[idx])
   saveRDS(metrics, paste0("output/spacetime/",modelNames[idx],".metrics.RDS"))
 }

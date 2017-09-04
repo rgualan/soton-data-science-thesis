@@ -2,13 +2,7 @@
 rm(list=ls())
 
 ### Load required packages ###
-#library(fields)
-#library(raster)
-#library(spatial.tools)
-#library(gdalUtils)
-#library(rgdal)
 library(gstat)
-#library(automap)
 source("util/my_helper.R")
 
 ### Read data ##############################################################################
@@ -19,8 +13,8 @@ str(epa)
 ## Scale dependent variable
 epa$sOzone <- scale(epa$Ozone) 
 
-### Purely spatial model #####################################################################
-folds <- readRDS("output/folds.RDS")
+## Purely spatial model #####################################################################
+folds <- getFolds()
 days = seq(min(epa$Date),max(epa$Date),by="days")
 
 ## 10-fold cross validation

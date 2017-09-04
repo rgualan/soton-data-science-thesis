@@ -266,7 +266,7 @@ crossStat <- function(var1, var2="Measurement", STxDF=epa.STFDF, digits=NA) {
 k <- 10
 #folds <- cut(sample(1:dim(epa.STFDF)[1]),breaks=k,labels=F)
 #saveRDS(folds, file="output/folds.RDS")
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 par(ask=F) # For showing TS plots en each iteration
 
 if(forceRun){

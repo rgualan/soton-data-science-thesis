@@ -18,7 +18,7 @@ sites <- getSites(epa)
 epa$sOzone <- scale(epa$Ozone) 
 
 ### Purely spatial model #####################################################################
-folds <- readRDS("output/folds.RDS")
+folds <- getFolds()
 days = seq(min(epa$Date),max(epa$Date),by="days")
 
 ## 10-fold cross validation
