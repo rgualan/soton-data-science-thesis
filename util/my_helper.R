@@ -3,7 +3,6 @@ library(ggplot2)
 library(sp)
 library(lattice)
 library(RColorBrewer)
-library(ggplot2)
 library(grid)
 library(gridExtra)
 
@@ -23,16 +22,29 @@ convertStringToPOSIXct <- function(a){
 
 ## Add Day-Of-Year field
 addDoyField <- function(d){
+  # x <- 1:366
+  # y <- cos((x-1)*(2*pi)/(366))
+  # plot(y, type="l")
+
   d$Doy <- as.integer(format(d$Date,"%j"))
+  d$Doy <- cos((d$Doy-1)*(2*pi)/(366))
   return(d)
 }
 
+## Get folds for a 10-fold CV
+getFolds <- function(){
+  folds <- readRDS("output/folds.RDS")
+  return(folds)
+}
+
 ## Add Day-Of-Week field
-addDowField <- function(d){
+addDowField <- function(d, sinTx=F){
   d$Dow.name <- weekdays(d$Date)
   ## Build mapping data.frame
   Dow.name <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
   Dow.number <- 1:7
+  if(sinTx)
+    Dow.number <- sin(2*pi*(Dow.number-1)/6)
   dfDow <- data.frame(Dow.name=Dow.name,Dow.number=Dow.number)
   ## Combine
   d$Dow.number <- match(d$Dow.name, dfDow$Dow.name)
@@ -50,6 +62,32 @@ addIsWeekDay <- function(d){
   return(d)
 }
 
+## Transformation
+addIsWeekDay <- function(d){
+  d$isWeekday <- T
+  d$isWeekday[d$Dow.name %in% c("Saturday","Sunday")] <- F
+  d$isWeekday <- as.factor(d$isWeekday)
+  return(d)
+}
+
+## Attributes derived from Date
+addDateDerivedFeatures <- function(epa){
+  epa <- addDoyField(epa)
+  epa <- addDowField(epa)
+  epa <- addIsWeekDay(epa)
+  epa$Month <- as.numeric(format(epa$Date, "%m"))
+  epa$Day <- as.numeric(format(epa$Date, "%d"))
+  return(epa)
+}
+
+## Transform features
+## sqrtWind
+## logRain
+transformFeatures <- function(epa){
+  epa$sqrtWind <- sqrt(epa$Wind)
+  epa$logRain <- log(1+epa$Rain, 10) # The additive term is to avoid -inf
+  return(epa)
+}
 
 ## Scale variable and add a Bias that avoids negative values
 scalePlusBias <- function(column){
@@ -65,6 +103,54 @@ getDates <- function(dateA="2016-01-01", dateB="2016-12-31"){
   days <- seq(from=da, to=db, by='days')
   days2 <- as.Date(days)
   return(days2)
+}
+
+## Add combination of closest neighbours as a predictor
+## New column: Neighbor
+addNeighboursAverage <- function(epa, k=5, plotTs=F){
+  sites <- getSites(epa)
+  epa$Neighbor <- NA
+  for(s in sites$Station.Code){
+    #print(s)
+    kn <- getKneighbours(s,sites,k,include_own = F)
+    ## Most of the cases there will be a strong correlation, between the current station
+    ## and the kneighbor stations
+    original <- epa$Ozone[epa$Station.Code==s]
+    
+    ## Inverse distance weighted average
+    w <- kn$distance/sum(kn$distance)
+    A <- matrix(NA,nrow=length(original), ncol=k); colnames(A) <- kn$Station.Code
+    for(j in 1:nrow(kn)){
+      A[,j] <- epa$Ozone[epa$Station.Code==kn$Station.Code[j]]
+    }
+    b <- A%*%w
+    epa$Neighbor[epa$Station.Code==s] <- b
+    
+    ## Debug:
+    #C <- cbind(original,A,combined=b); cor(C)
+    ## Plot:
+    if(cor(original,b)<0.5 && plotTs){
+      plotStations(F,kn$Station.Code,redIds = s); readline("Continue?")
+      plot(A[,1],main=cor(original,b),type="l",lty="dashed",lwd=0.5)
+      for(i in 2:k){lines(A[,i],lty="dashed",lwd=0.5,col=i)}
+      lines(b,col=2,lwd=2); lines(original,col=3,lwd=2)
+      readline("Continue?") 
+    }
+  }
+  ## Problem:
+  ## Station 023-1005
+  ## It is isolated in the northwest R:-0.18!!!
+  ## Luckily this station is the only problem
+  # epa$Neighbor <- scale(epa$Neighbor)[,1]
+  # cor(epa$sOzone,epa$Neighbor)
+  ## Notes:
+  ## k was chosen based on the best R2
+  return(epa)
+}
+
+scaleTargetVariable <- function(epa){
+  epa$sOzone <- scale(epa$Ozone)[,1]
+  return(epa)
 }
 
 ## Fill missing dates in the original ds 
@@ -275,31 +361,40 @@ timeSeriesPlotWithInterval <- function(d, var.name="Ozone", label="Ozone (ppb)",
 ## dateA: initial date
 ## dateB: end date
 ## stations: stations, with coordinates to extract the values. Eg:
-extractTimeSeriesFromNc <- function(ncFile, dateA, dateB, stations, colNames){
+extractTimeSeriesFromNc <- function(ncFile, dateA, dateB, stations, colNames, singleLevel=F){
   # read the netCDF file as a raster layer
   r <- raster(ncFile)
   #r; print(r)
   
   covariate <- data.frame( date=c(),Station.ID=c(),tmp=c())
   #i=1
-  for(i in 1:nbands(r)){
-    #for(i in 1:5){
-    print(i)  
-    r <- raster(ncFile, band=i)
-    z <- convertStringToPOSIXct(getZ(r))
-    if(z>=dateA & z<=dateB){
-      print("Processing")
-      vals <- extract(r, as.matrix(stations), #stations[,2:3]
-                      method='bilinear', fun=mean, na.rm=TRUE)
-      tmp <- data.frame( Station.ID=rownames(stations), #stations[,1]
-                         Date=rep(z,length(vals)),
-                         var=vals)
-      covariate <- rbind(covariate, tmp)
+  if(!singleLevel){
+    for(i in 1:nbands(r)){
+      #for(i in 1:5){
+      print(i)  
+      r <- raster(ncFile, band=i)
+      z <- convertStringToPOSIXct(getZ(r))
+      if(z>=dateA & z<=dateB){
+        print("Processing")
+        vals <- extract(r, as.matrix(stations), #stations[,2:3]
+                        method='bilinear', fun=mean, na.rm=TRUE)
+        tmp <- data.frame( Station.ID=rownames(stations), #stations[,1]
+                           Date=rep(z,length(vals)),
+                           var=vals)
+        covariate <- rbind(covariate, tmp)
+      }
     }
+  }else{
+    r <- raster(ncFile)
+    vals <- extract(r, as.matrix(stations), 
+                    method='bilinear', fun=mean, na.rm=TRUE)
+    theDates <- getDates()
+    covariate <- data.frame( Station.ID=rep(rownames(stations), length(theDates)), 
+                       Date=rep(theDates, each=nrow(stations)),
+                       var=rep(vals,length(theDates)))
   }
   #names(covariate)[which(names(covariate)=="var")] <- colName 
   names(covariate) <- colNames
-
   return(covariate)  
 }
 
@@ -444,7 +539,7 @@ evaluatePredictions <- function (z, zhat, n=3)
 
 ## Wraper to the sequence of instructions for printing a plot
 ## in a jpeg file
-printPlot <- function(paper=T,file,width=6,height=6,res=150,FUN){
+printPlot <- function(paper=T,file,width=6,height=6,FUN){
   if(paper) jpeg(file, width, height, "in", bg="white", res=150)
 
   # Evalute the desired series of expressions inside of tryCatch
@@ -487,24 +582,22 @@ highlightStation <- function(s){
 
 getKneighbours<-function(s, sites, k, include_own=F){
   ## Calculate distance matrix
-  ks0 <- sites[,c("Station.Code","UTM.X","UTM.Y")] # known sites
-  ks <- ks0[,-1]
-  rownames(ks) <- ks0$Station.Code
-  #head(ks)
-  m <- as.matrix(dist(ks))
+  ks <- sites[,c("Station.Code","UTM.X","UTM.Y")] # known sites
+  m <- as.matrix(dist(ks[,-1]))
   #dim(m)
   #m[1:5,1:5]
   
-  ## Get nearest neighbourS
-  actualRow <- m[s,]
-  #kIds <- names(sort(actualRow))[1:(k+1)]
+  ## Get nearest neighbours
+  actualRow <- m[which(s == sites$Station.Code),]
   kNb <-sort(actualRow)[1:(k+1)]
 
-  #return(kIds[-1])
+  includeIndex <- 1:length(kNb)
   if(!include_own)
-    output <- data.frame(Station.Code=names(kNb[-1]), distance=kNb[-1])
-  else
-    output <- data.frame(Station.Code=names(kNb), distance=kNb)
+    includeIndex <- 2:length(kNb)
+
+  output <- data.frame(
+    Station.Code=sites$Station.Code[as.numeric(names(kNb[includeIndex]))], 
+    distance=kNb[includeIndex])
   
   return(output)
 }
@@ -533,19 +626,28 @@ getKneighboursInRadius<-function(s, sites, radius, include_own=F){
   return(output)
 }
 
-
-plotStations <- function(paper=T, IDS, fileName,width,height, redIds=NA){
+## Fil:
+## 1: Location.type
+## 2: Station.Code
+plotStations <- function(paper=T, IDS, fileName, width, height, redIds=NA, fill=1){
   sites <- getAllSites()
-  sites <- sites[sites$Station.Code %in% IDS,]
+  if(!anyNA(redIds)){
+    regularPlusRed <- unique(rbind(data.frame(sc=IDS),
+                                   data.frame(sc=redIds)))
+  }else{
+    regularPlusRed <- unique(data.frame(sc=IDS)) 
+  } 
+
+  sites <- sites[sites$Station.Code %in% regularPlusRed$sc,]
   
-  if(!is.na(redIds)){
+  if(!anyNA(redIds)){
     IDS <- IDS[!IDS %in% redIds]
   }
   
   printPlot(paper,fileName,width,height,FUN= function(){
     p <- ggplot(getCAmap()) +
       geom_polygon(aes(x = long, y = lat, group = group), fill = "white", colour = "black") +
-      geom_point(data = sites[sites$Station.Code %in% IDS,], aes(x = Longitude, y = Latitude, fill=Location.Setting),
+      geom_point(data = sites[sites$Station.Code %in% IDS,], aes(x = Longitude, y = Latitude, fill= if(fill==1) Location.Setting else Station.Code),
                  alpha = 0.75, shape=24, size=2) +
       labs(x = "Longitude", y = "Latitude", fill="Type") +
       coord_quickmap() +
@@ -554,10 +656,10 @@ plotStations <- function(paper=T, IDS, fileName,width,height, redIds=NA){
             legend.box.background = element_rect()#, 
             #legend.box.margin = margin(6, 6, 6, 6)
       )
-    if(!is.na(redIds)){
-      p <- p + geom_point(data = sites[sites$Station.Code %in% c(redIds),], 
+    if(!anyNA(redIds)){
+      p <- p + geom_point(data = sites[sites$Station.Code %in% redIds,], 
                           aes(x = Longitude, y = Latitude),
-                          fill="red", alpha = 0.75, shape=24, size=4)
+                          fill="red", alpha = 1, shape=24, size=2.5)
     }
     
     plot(p)

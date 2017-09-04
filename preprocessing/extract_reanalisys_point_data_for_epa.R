@@ -10,8 +10,7 @@ source("util/my_helper.R")
 paper <- setupPaper()
 
 ## Read data #########################################################################
-#d <- readRDS("data/epa/epa_daily/2016/california_ozone.RDS")
-d <- readRDS("data/epa/epa_daily/2016/california_ozone_2.RDS")
+d <- readRDS("data.big/epa/epa_daily/2016/california_ozone_2.RDS")
 sites <- getSites(d)
 
 ## Relevant period
@@ -28,29 +27,58 @@ rownames(sites.sp@coords) <- sites.sp$Station.Code
 sites.lcc <- spTransform(sites.sp,lcc)
 
 ## Extract covariates ###################################################
-temp <- extractTimeSeriesFromNc("data/reanalysis/air.2m.2016.nc", 
+temp <- extractTimeSeriesFromNc("data.big/reanalysis/air.2m.2016.nc", 
                                 dateA, dateB, sites.lcc@coords, 
                                 c("Station.Code","Date","Temperature"))
-rh <- extractTimeSeriesFromNc("data/reanalysis/rhum.2m.2016.nc",
+rh <- extractTimeSeriesFromNc("data.big/reanalysis/rhum.2m.2016.nc",
                               dateA, dateB, sites.lcc@coords,
                               c("Station.Code","Date","RH"))
-rain <- extractTimeSeriesFromNc("data/reanalysis/apcp.2016.nc",
+rain <- extractTimeSeriesFromNc("data.big/reanalysis/apcp.2016.nc",
                               dateA, dateB, sites.lcc@coords,
                               c("Station.Code","Date","Rain"))
-uwnd <- extractTimeSeriesFromNc("data/reanalysis/uwnd.10m.2016.nc",
+uwnd <- extractTimeSeriesFromNc("data.big/reanalysis/uwnd.10m.2016.nc",
                                 dateA, dateB, sites.lcc@coords,
                                 c("Station.Code","Date","Uwnd"))
-vwnd <- extractTimeSeriesFromNc("data/reanalysis/vwnd.10m.2016.nc",
+vwnd <- extractTimeSeriesFromNc("data.big/reanalysis/vwnd.10m.2016.nc",
                                 dateA, dateB, sites.lcc@coords,
                                 c("Station.Code","Date","Vwnd"))
+vwnd <- extractTimeSeriesFromNc("data.big/reanalysis/vwnd.10m.2016.nc",
+                                dateA, dateB, sites.lcc@coords,
+                                c("Station.Code","Date","Vwnd"))
+vwnd <- extractTimeSeriesFromNc("data.big/reanalysis/vwnd.10m.2016.nc",
+                                dateA, dateB, sites.lcc@coords,
+                                c("Station.Code","Date","Vwnd"))
+dewPoint <- extractTimeSeriesFromNc("data.big/reanalysis/dpt.2m.2016.nc",
+                                dateA, dateB, sites.lcc@coords,
+                                c("Station.Code","Date","Dew.Point"))
+waterEvaporation <- extractTimeSeriesFromNc("data.big/reanalysis/evap.2016.nc",
+                                    dateA, dateB, sites.lcc@coords,
+                                    c("Station.Code","Date","Water.Evap"))
+heatFlux <- extractTimeSeriesFromNc("data.big/reanalysis/gflux.2016.nc",
+                                            dateA, dateB, sites.lcc@coords,
+                                            c("Station.Code","Date","Heat.Flux"))
+geoHeight <- extractTimeSeriesFromNc("data.big/reanalysis/hgt.sfc.nc",
+                                    dateA, dateB, sites.lcc@coords,
+                                    c("Station.Code","Date","Geop.Height"), singleLevel=T)
+geoHeightTropo <- extractTimeSeriesFromNc("data.big/reanalysis/hgt.tropo.2016.nc",
+                                     dateA, dateB, sites.lcc@coords,
+                                     c("Station.Code","Date","Geop.Height.Tropo"))
+latentHeatFlux <- extractTimeSeriesFromNc("data.big/reanalysis/lhtfl.2016.nc",
+                                          dateA, dateB, sites.lcc@coords,
+                                          c("Station.Code","Date","Lat.Heat.Flux"))
+tropopausePressure <- extractTimeSeriesFromNc("data.big/reanalysis/pres.tropo.2016.nc",
+                                              dateA, dateB, sites.lcc@coords,
+                                              c("Station.Code","Date","Tropo.Press"))
+pressureMSL <- extractTimeSeriesFromNc("data.big/reanalysis/prmsl.2016.nc",
+                                       dateA, dateB, sites.lcc@coords,
+                                       c("Station.Code","Date","Press.MSL"))
+vegetation <- extractTimeSeriesFromNc("data.big/reanalysis/veg.2016.nc",
+                                       dateA, dateB, sites.lcc@coords,
+                                       c("Station.Code","Date","Vegetation"))
+
 ## Calculate Wind speed (Pythagoras theorem)
 wind <- merge(uwnd,vwnd)
 wind$Wind <- sqrt(wind$Uwnd^2+wind$Vwnd^2)
-
-## Transformation #######################################################
-wind$sqrtWind <- sqrt(wind$Wind)
-rain$logRain <- log(rain$Rain)
-## rain$logRain[rain$logRain==-Inf] <- 0 ## TODO!!!
 
 ## Merge datasets #######################################################
 # dim(d); dim(temp)
@@ -58,64 +86,47 @@ d2 <- merge(d,temp,all=T)
 d2 <- merge(d2,rh,all=T)
 d2 <- merge(d2,rain,all=T)
 d2 <- merge(d2,wind[,-(3:4)],all=T)
+d2 <- merge(d2,dewPoint,all=T)
+d2 <- merge(d2,waterEvaporation,all=T)
+d2 <- merge(d2,heatFlux,all=T)
+d2 <- merge(d2,geoHeight,all=T)
+d2 <- merge(d2,geoHeightTropo,all=T)
+d2 <- merge(d2,latentHeatFlux,all=T)
+d2 <- merge(d2,tropopausePressure,all=T)
+d2 <- merge(d2,pressureMSL,all=T)
+d2 <- merge(d2,vegetation,all=T)
 # dim(d2)
-
-## EDA ##################################################################
-
-## Temperature
-printPlot(paper,"img/eda/reanalysis/histogram_temperature.jpeg",5,5,FUN=function(){
-  hist(d2$Temperature, main="", xlab="Air Temperature at 2m (K)")
-})
-printPlot(paper, "img/eda/reanalysis/heatmap_temperature.jpeg", 6, 7, FUN=function(){
-  simple_heatmap(d2, "Temperature")
-})
-printPlot(paper, "img/eda/reanalysis/ts_temperature.jpeg", 5, 3, FUN=function(){
-  timeSeriesPlotWithInterval(d2, "Temperature", "Temperature (K)")
-})
-
-## Relative Humidity
-printPlot(paper,"img/eda/reanalysis/histogram_rh.jpeg",5,5,FUN=function(){
-  hist(d2$RH, main="", xlab="Relative humidity (%)")
-})
-## Notes: bimodal distribution
-## For LDA you really do not want to remove the bimodality, as it will reduce the discrimination of your analysis
-## https://stats.stackexchange.com/questions/209241/what-transformation-should-i-use-for-a-bimodal-distribution
-printPlot(paper, "img/eda/reanalysis/heatmap_rh.jpeg", 6, 7, FUN=function(){
-  #heatmapPlusTs(d2, "RH", "Relative humidity (%)")
-  simple_heatmap(d2, "RH")
-})
-printPlot(paper, "img/eda/reanalysis/ts_rh.jpeg", 5, 3, FUN=function(){
-  timeSeriesPlotWithInterval(d2, "RH", "Rel. humidity (%)")
-})
-
-## Wind speed
-printPlot(paper,"img/eda/reanalysis/histogram_ws.jpeg",5,5,FUN=function(){
-  hist(d2$Wind, main="", xlab="Wind speed (m/s)")
-})
-printPlot(paper,"img/eda/reanalysis/histogram_ws_sqrt.jpeg",5,5,FUN=function(){
-  hist(sqrt(d2$Wind), main="", xlab="sqrt(Wind speed)")
-})
-printPlot(paper, "img/eda/reanalysis/heatmap_ws.jpeg", 6, 7, FUN=function(){
-  simple_heatmap(d2, "Wind")
-})
-printPlot(paper, "img/eda/reanalysis/ts_ws", 5, 3, FUN=function(){
-  timeSeriesPlotWithInterval(d2, "Wind", "Wind speed (m/s)")
-})
-
-## Rain
-printPlot(paper,"img/eda/reanalysis/histogram_rain.jpeg",5,5,FUN=function(){
-  hist(d2$Rain, main="", xlab="Precipitation amount(kg/m^2)")
-})
-printPlot(paper,"img/eda/reanalysis/histogram_rain_log.jpeg",5,5,FUN=function(){
-  hist(log(d2$Rain), main="", xlab="log(Precipitation)")
-})
-printPlot(paper, "img/eda/reanalysis/heatmap_rain.jpeg", 6, 7, FUN=function(){
-  simple_heatmap(d2, "Rain")
-})
-printPlot(paper, "img/eda/reanalysis/ts_rain", 5, 3, FUN=function(){
-  timeSeriesPlotWithInterval(d2, "Rain", "Precipitation (Kg/m^2)")
-})
 
 ## Save #################################################################
 d2 <- merge(d2,sites[,c("Station.Code","Longitude","Latitude","UTM.X","UTM.Y","Elevation","Location.Setting")])
 saveRDS(d2,file="data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
+# d2 <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov.RDS")
+
+## TODO: Temporal solution to create california_ozone_plus_rcov_3.RDS
+d3 <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")  ## Ozone missing values were replaced
+d3$Ozone2 <- d3$Ozone
+d4 <- merge( d2, d3[,c("Station.Code","Date","Ozone2")] )
+#cor(d4$Ozone2, d4$Ozone, use="pairwise.complete.obs")
+d4$Ozone <- d4$Ozone2
+d4 <- d4[,c("Station.Code","Date","Ozone","Temperature",
+            "RH","Rain","Wind","Dew.Point","Water.Evap",
+            "Heat.Flux","Geop.Height","Geop.Height.Tropo",
+            "Lat.Heat.Flux","Tropo.Press","Press.MSL",
+            "Vegetation","Longitude","Latitude","UTM.X","UTM.Y",
+            "Elevation","Location.Setting")]
+#d4 <- d4[order(d4$Station.Code,d4$Date),]
+#head(d4)
+
+## Some stations couldnt be interpolated
+#summary(d4)
+MIDs <- unique(d4$Station.Code[is.na(d4$Heat.Flux)])
+#plotStations(F,MIDs)
+# In water?
+# Bye bye to these stations
+d4 <- d4[!d4$Station.Code %in% MIDs, ]
+d4 <- d4[d4$Station.Code!="023-1005", ] ##TODO!!!
+
+
+saveRDS(d4, "data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")  
+#d4 <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")  
+
