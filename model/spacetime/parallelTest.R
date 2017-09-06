@@ -10,40 +10,19 @@ source("model/spacetime/testStKriging.R")
 ## Run simulations in parallel
 cl <- makeCluster(3,outfile="")
 timeLags <- list(a=0:5, b=0:7, c=0:10)
-clusterExport(cl, c("timeLags","ticToc"))
-#ticToc({
+mainDf <- data.frame(id=1:10)
+clusterExport(cl, c("timeLags","ticToc","mainDf"))
 tryCatch({
   o <- clusterApply(cl, 1:length(timeLags), function(x){
     cat("Doing something in parallel: ", x, "\n")
-    ticToc({
-      for(i in 1:50) {
-        a = rnorm(100000)
-        a = sort(a)
-      }
-      print(length(a))
-    })
-    
-    ## Step B
-    try({
-      print("Step B")
-      stop("First problem")
-    })
-    
-    ## Step C
-    try({
-      print("Step C")
-      stop("Second problem")
-    })
-
-    out <- sum(1:x)
-    #return(length(timeLags[[x]]))
-    return(out)
+    mainDf[sprintf("column_%d",x)] <- mainDf$id*x
+    return(mainDf)
   })
-  print(o)
 }, error = function(e){
   print(e)
 }, finally = {
   stopCluster(cl)
 })
-#})
 
+out = Reduce(function(...) merge(..., all=T), o)
+head(out)

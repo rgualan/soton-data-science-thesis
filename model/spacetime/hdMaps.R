@@ -23,23 +23,20 @@ smplDays <- sort(sample(365,8))
 
 
 ## Read data #################################################################
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
-## Add date covariates
-epa <- addDoyField(epa)
-epa <- addDowField(epa)
-## Sites
+epa_version <- 1
+epa <- readEpaDataset(epa_version)
+epa <- addDateDerivedFeatures(epa)
+epa <- transformFeatures(epa)
+epa <- scaleTargetVariable(epa)
+epa <- detrend_scaled_ozone_poly(epa)
 sites <- getSites(epa)
-## Scale target variable #####################################################
-epa$sOzone <- scale(epa$Ozone)[,1]  ## scale returns a matrix
 
 ## Assemble STFDF ############################################################
 epa.st <- assembleSTFDF(epa) 
-# stplot(epa.st[,"2016-01-01::2016-01-08","sOzone"])
-# dim(epa.st)
 
 ## Covariance models #########################################################
-fm <- sOzone~1
-tlags <- 0:7
+fm <- sOzone.res ~ 1
+tlags <- 0:10
 
 ticToc({
   covModels <- fitCovarianceModels(epa.st, fm, tlags, paper=F)
@@ -58,7 +55,7 @@ proj4string(gridCA) <- getUTMproj()
 fullgrid(gridCA) <- F
 
 ## Pre-compute to avoid using the method over (unavailable library in the cluster)
-# ind <- over(gridCA, as(getCAmap(proj="utm"),"SpatialPolygons"))
+ind <- over(gridCA, as(getCAmap(proj="utm"),"SpatialPolygons"))  ## TODO: There is some problem here!!!
 # saveRDS(ind, file="data/others/ind.RDS")
 ind<-readRDS("data/others/ind.RDS")
 
@@ -96,10 +93,10 @@ ticToc({
                      progress=F)
 })
 
-saveRDS(sepPred, file="output/spacetime/sepPred.RDS")
-saveRDS(metricPred, file="output/spacetime/metricPred.RDS")
-saveRDS(psPred, file="output/spacetime/psPred.RDS")
-saveRDS(sumPred, file="output/spacetime/sumPred.RDS")
+saveRDS(sepPred, file="output/spacetime/model.sepPred.RDS")
+saveRDS(metricPred, file="output/spacetime/model.metricPred.RDS")
+saveRDS(psPred, file="output/spacetime/model.psPred.RDS")
+saveRDS(sumPred, file="output/spacetime/model.sumPred.RDS")
 ## Load the last saved variables
 # sepPred <- readRDS("output/spacetime/sepPred.RDS")
 # psPred <- readRDS("output/spacetime/psPred.RDS")

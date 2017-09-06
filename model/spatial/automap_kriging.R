@@ -2,31 +2,21 @@
 rm(list=ls())
 
 ### Load required packages ###
-#library(fields)
-#library(raster)
-#library(spatial.tools)
-#library(gdalUtils)
-#library(rgdal)
-#library(gstat)
 library(automap)
 source("util/my_helper.R")
 
 ### Read data ##############################################################################
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
+epa <- readEpaDataset()
+epa <- scaleTargetVariable(epa) 
 sites <- getSites(epa)
-#str(epa)
-
-## Scale dependent variable
-epa$sOzone <- scale(epa$Ozone) 
-#hist(epa$Ozone)
-#hist(epa$sOzone)
 
 ### Purely spatial model #####################################################################
 folds <- getFolds()
-days = seq(min(epa$Date),max(epa$Date),by="days")
+days = getDates(dateOutput = F)
 
 ## 10-fold cross validation
 metrics = c()
+epa.out <- data.frame()
 ticToc({
   for(k in 1:10){
     print(paste("Fold", k,paste(rep("=",50),collapse = "")))
@@ -45,7 +35,11 @@ ticToc({
       proj4string(slice.train) <- getUTMproj()
       proj4string(slice.test) <- getUTMproj()
   
-      out = autoKrige(sOzone~Temperature+RH+Elevation, slice.train, slice.test)
+      fm <- sOzone~Temperature+RH+Elevation
+      # fm <- sOzone~Temperature+RH+Dew.Point+Water.Evap+Heat.Flux+Geop.Height+
+      #   Geop.Height.Tropo+Tropo.Press+Press.MSL+Vegetation+Elevation
+      
+      out = autoKrige(fm, slice.train, slice.test)
       
       # ## Diagnostic
       # plot(out)
@@ -57,20 +51,25 @@ ticToc({
       
       epa.test$sOzoneH[epa.test$Date==day] <- out$krige_output$var1.pred
     }
-    m <- evaluatePredictions(epa.test$sOzone, epa.test$sOzoneH)
+    epa.out <- rbind(epa.out,epa.test)
+    
+    # m <- evaluatePredictions(epa.test$sOzone, epa.test$sOzoneH)
     # plot(epa.test$sOzone,type="l")
     # lines(epa.test$OzoneTps,col=2)
-    metrics <- rbind(metrics,m)
+    # metrics <- rbind(metrics,m)
   }
 })
 
+metrics <- getMetricsByStationFromDF(epa.out)
+
 ## Print results
 print("Metrics:")
-print(metrics)
+print(metrics[1:10,])
 print("Cross-validation mean:")
 apply(metrics,2,mean)
 ## Save results
-saveRDS(metrics, "output/space/automap.RDS")
+saveRDS(metrics, "output/space/automap.metrics.RDS")
+saveRDS(epa.out, "output/space/automap.out.RDS")
 
 
 ## Notes:

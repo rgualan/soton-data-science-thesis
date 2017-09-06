@@ -16,15 +16,12 @@ source("util/my_helper.R")
 paper <- setupPaper()
 
 ## Read data ##############################################################################
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
-## Add date covariates
-epa <- addDoyField(epa)
-epa <- addDowField(epa)
-## Sites
+epa <- readEpaDataset()
+epa <- addDateDerivedFeatures(epa)
+epa <- transformFeatures(epa)
+epa <- scaleTargetVariable(epa)
+epa <- detrend_scaled_ozone_poly(epa)
 sites <- getSites(epa)
-#str(epa)
-## Scale target variable #####################################################
-epa$sOzone <- scale(epa$Ozone)[,1]  ## scale returns a matrix
 
 # ## Simple imputation of Ozone ################################################
 # source("preprocessing/gbmImpute.R")
@@ -206,14 +203,16 @@ vmod
 fm <- sOzone~Elevation+Temperature
 
 ticToc({vv = variogram(fm, epa.st, width=20, cutoff = 200, tlags=0:7)})
-ticToc({vv2 = variogram(fm, epa.st, width=20, cutoff = 200, tlags=c(0,5,7))})
-empVgm <- vv # Chose one for fitting the variogram models 
+ticToc({vv2 = variogram(fm, epa.st, width=20, cutoff = 200, tlags=0:3)})
+plot(vv,map=F)
+plot(vv2,map=F)
+empVgm <- vv2 # Chose one for fitting the variogram models 
 linStAni <- estiStAni(empVgm, c(10,200))
 
 printPlot(paper,"img/variogram/emp_stvgm_1.jpeg",6,4,FUN=function(){
   print(plot(vv))
 })
-printPlot(paper,"img/variogram/emp_stvgm_2.jpeg",6,4,FUN=function(){
+printPlot(paper,"img/variogram/emp_stvgm_2.jpeg",5,5,FUN=function(){
   print(plot(vv, map = FALSE))
 })
 printPlot(paper,"img/variogram/emp_stvgm_custom_1.jpeg",6,4,FUN=function(){
@@ -225,14 +224,12 @@ printPlot(paper,"img/variogram/emp_stvgm_custom_2.jpeg",6,4,FUN=function(){
 printPlot(paper,"img/variogram/emp_stvgm_1_wireframe.jpeg",5,5,FUN=function(){
   print(plot(vv, wireframe=T, zlab=NULL, xlab=list("Distance (km)", rot=30, cex=0.8),
              ylab=list("Time lag (days)", rot=-35, cex=0.8),
-             scales=list(arrows=F, z = list(distance = 5), cex=0.7),
-             zlim=c(0.2,0.8)))
+             scales=list(arrows=F, z = list(distance = 5), cex=0.7)))
 })
 printPlot(paper,"img/variogram/emp_stvgm_2_wireframe.jpeg",5,5,FUN=function(){
   print(plot(vv2, wireframe=T, zlab=NULL, xlab=list("Distance (km)", rot=30, cex=0.8),
              ylab=list("Time lag (days)", rot=-35, cex=0.8),
-             scales=list(arrows=F, z = list(distance = 5), cex=0.7),
-             zlim=c(0.2,0.8)))
+             scales=list(arrows=F, z = list(distance = 5), cex=0.7)))
 })
 
 
@@ -342,17 +339,17 @@ printPlot(paper,"img/variogram/all.jpeg",7,5,FUN=function(){
 
 ## Prediction #####################################################################
 #folds <- getFolds()
-folds <- cut(sample(1:nrow(sites)),breaks=10,labels=F)
-testIndices <- folds==1
-j = which(testIndices)[1]
-a<-epa.st[!testIndices]
-ticToc({tmp <- krigeST(fm, data=a,
-                       newdata=a, 
-                       sepModel, nmax=50,
-                       stAni=linStAni/24/3600,
-                       progress=F)$var1.pred})
-dates <- getDates()
-plot(epa.st[j,,"sOzone",drop=F]@data$sOzone, type="l")
-lines(tmp,col=2)
-evaluatePredictions(epa.st[j,,"sOzone",drop=F]@data$sOzone,tmp)
+# folds <- cut(sample(1:nrow(sites)),breaks=10,labels=F)
+# testIndices <- folds==1
+# j = which(testIndices)[1]
+# a<-epa.st[!testIndices]
+# ticToc({tmp <- krigeST(fm, data=a,
+#                        newdata=a, 
+#                        sepModel, nmax=50,
+#                        stAni=linStAni/24/3600,
+#                        progress=F)$var1.pred})
+# dates <- getDates()
+# plot(epa.st[j,,"sOzone",drop=F]@data$sOzone, type="l")
+# lines(tmp,col=2)
+# evaluatePredictions(epa.st[j,,"sOzone",drop=F]@data$sOzone,tmp)
 

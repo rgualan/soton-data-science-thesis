@@ -7,23 +7,18 @@ library(gstat)
 source("util/my_helper.R")
 
 ### Load data ##############################################################################
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
+epa <- readEpaDataset()
+epa <- addDateDerivedFeatures(epa)
+epa <- scaleTargetVariable(epa)
 sites <- getSites(epa)
-str(epa)
-#View(epa)
-## Feature engineering
-epa <- addDoyField(epa)
-epa <- addDowField(epa)
-## Scale variable 
-epa$sOzone <- scale(epa$Ozone)
-
 
 ### Purely spatial model #####################################################################
 folds <- getFolds()
-days = seq(min(epa$Date),max(epa$Date),by="days")
+days = getDates(dateOutput = F)
 
 ## 10-fold cross validation
 metrics = c()
+epa.out <- data.frame()
 ticToc({
   for(k in 1:10){
     print(paste("Fold", k,paste(rep("=",50),collapse = "")))
@@ -48,19 +43,20 @@ ticToc({
       epa.test$sOzoneH[epa.test$Date==day] <-
         predict(fit,slice.test[,predictors])
     }
-    m <- evaluatePredictions(epa.test$sOzone, epa.test$sOzoneH)
+    epa.out <- rbind(epa.out,epa.test)
     # plot(epa.test$sOzone,type="l")
     # lines(epa.test$OzoneTps,col=2)
-    metrics <- rbind(metrics,m)
   }
 })
 
+metrics <- getMetricsByStationFromDF(epa.out)
+
 ## Print results
 print("Metrics:")
-print(metrics)
+print(metrics[1:10,])
 print("Cross-validation mean:")
 apply(metrics,2,mean)
 ## Save results
-saveRDS(metrics, "output/space/tps.RDS")
-
+saveRDS(metrics, "output/space/tps.metrics.RDS")
+saveRDS(epa.out, "output/space/tps.out.RDS")
 

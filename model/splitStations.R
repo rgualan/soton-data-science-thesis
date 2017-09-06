@@ -12,14 +12,25 @@ source("util/my_helper.R")
 ## Settings ##########################################################################
 paper <- F
 
-## Read data #########################################################################
-epa_ozone <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
-sites <- getSites(epa_ozone)
+## Read data and split #########################################################################
+epa <- readEpaDataset(1)
+sites <- getSites(epa)
+set.seed(204)
+folds <- cut(sample(1:nrow(sites)),breaks=10,labels=F)
+saveRDS(folds, file="data/folds.RDS")
 
-## Split 10-fold CV ##################################################################
+## Read data and split #########################################################################
+epa <- readEpaDataset(2)
+sites <- getSites(epa)
+set.seed(204)
+folds <- cut(sample(1:nrow(sites)),breaks=10,labels=F)
+saveRDS(folds, file="data/folds2.RDS")
+
+## Split ##################################################################
 #set.seed(204)
 #folds <- cut(sample(1:nrow(sites)),breaks=10,labels=F)
 #saveRDS(folds, file="output/folds.RDS")
+#saveRDS(folds, file="output/folds2.RDS")
 folds <- getFolds()
 length(folds)
 

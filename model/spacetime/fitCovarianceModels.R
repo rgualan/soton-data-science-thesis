@@ -4,7 +4,7 @@ library(xtable)
 ## implemented in gstat
 fitCovarianceModels <- function(epa.st, fm, tlags, paper){
   ## WORKFLOW ##################################################################
-  empVgm <- variogramST(fm, data=epa.st, tlags=tlags, na.omit=T)
+  empVgm <- variogramST(fm, data=epa.st, tlags=c(0:2), na.omit=T)
   linStAni <- estiStAni(empVgm, c(10,200))
   printPlot(paper,"img/spacetime/empirical_variogram.jpeg",6,6,FUN=function(){
     print(plot(empVgm, map=F))
@@ -14,9 +14,10 @@ fitCovarianceModels <- function(epa.st, fm, tlags, paper){
   ## Separable #################################################################
   print("Separable")
   separableModel <- vgmST("separable",
-                          space = vgm(0.45,"Exp",500,0.5), ##Factor,function,range,nugget
-                          time = vgm(0.45,"Exp",7,0.5), ##Factor,function,range,nugget 
-                          sill=0.8) # Base
+                          space = vgm(0.7,"Exp",100,0.1), ##Factor,function,range,nugget
+                          time = vgm(0.7,"Exp",10,0.5), ##Factor,function,range,nugget 
+                          sill=0.3) # Base
+
   printPlot(paper,"img/spacetime/vm_separable_eye.jpeg",7,5,FUN=function(){
     print(plot(empVgm, separableModel, all=T, map=F, zlab=""))
   })
@@ -66,8 +67,8 @@ fitCovarianceModels <- function(epa.st, fm, tlags, paper){
   ## Metric ################################################################################
   print("Metric")
   metricModel <- vgmST("metric",
-                       joint=vgm(0.4, "Mat", 100, 0.3, kappa = 1.5),
-                       stAni=50)
+                       joint=vgm(0.2, "Exp", 300, 0.1),
+                       stAni=200)
   printPlot(paper,"img/spacetime/vm_metric_eye.jpeg",7,5,FUN=function(){
     print(plot(empVgm, metricModel, all=T, map=F))
   })

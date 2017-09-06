@@ -4,20 +4,20 @@
 ## https://cran.r-project.org/web/packages/gstat/vignettes/st.pdf
 
 ## Libraries
+source("util/my_helper.R")
 library(gstat)
 library(spacetime)
 library(reshape2)
-source("util/my_helper.R")
 
 ## Global variables
 debugLevel=F
 
 
 ## 10-fold cross-validation ######################################################################
-runFold <- function(k, folds, fm, epa.st, outputColumnName, model, linStAni, nmax=50, expName=NA){
+runCV <- function(k, folds, fm, epa.st, outputColumnName, model, linStAni, nmax=50, expName=NA){
   res <- matrix(NA, dim(epa.st)[1], dim(epa.st)[2])
   ticToc({
-    for(i in 1:k) {
+    for(i in 1:k) { #1:k
       cat("Fold", i, "\n")
       testIndices <- folds==i
       
