@@ -94,18 +94,19 @@ ticToc({
 })
 
 saveRDS(sepPred, file="output/spacetime/model.sepPred.RDS")
-saveRDS(metricPred, file="output/spacetime/model.metricPred.RDS")
 saveRDS(psPred, file="output/spacetime/model.psPred.RDS")
+saveRDS(metricPred, file="output/spacetime/model.metricPred.RDS")
 saveRDS(sumPred, file="output/spacetime/model.sumPred.RDS")
 ## Load the last saved variables
-# sepPred <- readRDS("output/spacetime/sepPred.RDS")
-# psPred <- readRDS("output/spacetime/psPred.RDS")
-# sumPred <- readRDS("output/spacetime/sumPred.RDS")
+sepPred <- readRDS("output/spacetime/sepPred.RDS")
+psPred <- readRDS("output/spacetime/psPred.RDS")
+metricPred <- readRDS("output/spacetime/model.metricPred.RDS")
+sumPred <- readRDS("output/spacetime/sumPred.RDS")
 
 ## Spatio-temporal plots (for the paper) ############################################################
 ## Separated model
 stpl <- stplot(sepPred, col.regions=bpy.colors(120)[-(1:20)], scales=list(draw=F),
-               main=NULL, at=seq(-1.35,0.86,(0.86+1.35)/70),
+               main=NULL,
                sp.layout = list(list("sp.polygons", getCAmap(proj="utm"), first=FALSE, col=gray(0.5)),
                                 list("sp.points", epa.st@sp, col=gray(0.25), pch=3, cex=.5)))
 printPlot(paper, "img/spacetime/pred_daily_means_ozone_sep.jpeg", 9, 6, FUN=function(){
@@ -114,7 +115,7 @@ printPlot(paper, "img/spacetime/pred_daily_means_ozone_sep.jpeg", 9, 6, FUN=func
 
 ## Product-sum model
 stpl <- stplot(psPred, col.regions=bpy.colors(120)[-(1:20)], scales=list(draw=F),
-               main=NULL, at=seq(-1.35,0.86,(0.86+1.35)/70),
+               main=NULL,
                sp.layout = list(list("sp.polygons", getCAmap(proj="utm"), first=FALSE, col=gray(0.5)),
                                 list("sp.points", epa.st@sp, col=gray(0.25), pch=3, cex=.5)))
 printPlot(paper, "img/spacetime/pred_daily_means_ozone_ps.jpeg", 9, 6, FUN=function(){
@@ -123,7 +124,7 @@ printPlot(paper, "img/spacetime/pred_daily_means_ozone_ps.jpeg", 9, 6, FUN=funct
 
 ## Metric model
 stpl <- stplot(metricPred, col.regions=bpy.colors(120)[-(1:20)], scales=list(draw=F),
-               main=NULL, at=seq(-1.35,0.86,(0.86+1.35)/70),
+               main=NULL, 
                sp.layout = list(list("sp.polygons", getCAmap(proj="utm"), first=FALSE, col=gray(0.5)),
                                 list("sp.points", epa.st@sp, col=gray(0.25), pch=3, cex=.5)))
 printPlot(paper, "img/spacetime/pred_daily_means_ozone_metric.jpeg", 9, 6, FUN=function(){
@@ -132,7 +133,7 @@ printPlot(paper, "img/spacetime/pred_daily_means_ozone_metric.jpeg", 9, 6, FUN=f
 
 # Sum meteric model
 stpl <- stplot(sumPred, col.regions=bpy.colors(120)[-(1:20)], scales=list(draw=F),
-               main=NULL, at=seq(-1.35,0.86,(0.86+1.35)/70),
+               main=NULL, 
                sp.layout = list(list("sp.polygons", getCAmap(proj="utm"), first=FALSE, col=gray(0.5)),
                                 list("sp.points", epa.st@sp, col=gray(0.25), pch=3, cex=.5)))
 printPlot(paper, "img/spacetime/pred_daily_means_ozone_sum.jpeg", 9, 6, FUN=function(){
