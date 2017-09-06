@@ -84,7 +84,10 @@ if(F){
 
 ## Cleaned !!!
 d <- readRDS("data/epa/epa_daily/2016/california_ozone_2.RDS")
-sites <- getSites(d)
+d2 <- readEpaDataset()
+sites <- getSites(d2)
+d <- d[d$Station.Code %in% sites$Station.Code,]
+length(unique(d$Station.Code))
 
 ## Initial exploration ##############################################################################
 printPlot(paper,"img/eda/hist_ozone.jpeg",5,5,FUN=function(){
