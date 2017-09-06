@@ -8,6 +8,19 @@ library(gridExtra)
 
 
 ## Setup printing figures configuration
+readEpaDataset <- function(version=1){
+  if(version==1){
+    epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
+  } else if (version==2){
+    epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_4.RDS")
+  } else {
+    stop("Wrong parameter version!")  
+  }
+
+  return(epa)  
+}
+
+## Setup printing figures configuration
 setupPaper <- function(){
   if(exists(".paper")){paper<-.paper}else{paper<-T}  
   return(paper)
@@ -26,14 +39,20 @@ addDoyField <- function(d){
   # y <- cos((x-1)*(2*pi)/(366))
   # plot(y, type="l")
 
-  d$Doy <- as.integer(format(d$Date,"%j"))
-  d$Doy <- cos((d$Doy-1)*(2*pi)/(366))
+  d$Doy0 <- as.integer(format(d$Date,"%j"))
+  d$Doy <- cos((d$Doy0-1)*(2*pi)/(366))
   return(d)
 }
 
 ## Get folds for a 10-fold CV
-getFolds <- function(){
-  folds <- readRDS("output/folds.RDS")
+getFolds <- function(version=1){
+  if(version==1){
+    folds <- readRDS("data/folds.RDS")
+  } else if (version==2){
+    folds <- readRDS("data/folds2.RDS")
+  } else {
+    stop("Wrong parameter version!")  
+  }
   return(folds)
 }
 
@@ -97,12 +116,12 @@ scalePlusBias <- function(column){
 }
 
 ## Get days of the year in Date format
-getDates <- function(dateA="2016-01-01", dateB="2016-12-31"){
+getDates <- function(dateA="2016-01-01", dateB="2016-12-31", dateOutput=T){
   da <- convertStringToPOSIXct(dateA)
   db <- convertStringToPOSIXct(dateB)
   days <- seq(from=da, to=db, by='days')
-  days2 <- as.Date(days)
-  return(days2)
+  if(dateOutput) days <- as.Date(days)
+  return(days)
 }
 
 ## Add combination of closest neighbours as a predictor
@@ -487,14 +506,14 @@ evaluatePredictions <- function (z, zhat, n=3)
     u <- x[!is.na(x)]
     round(sum(u)/length(u), n)
   }
-  MAPE <- function(z, zhat) {
-    z <- as.matrix(z)
-    zhat <- as.matrix(zhat)
-    x <- abs(c(zhat - z))/z
-    u <- x[!is.na(x)]
-    u <- u[!is.infinite(u)]
-    round(sum(u)/length(u) * 100, n)
-  }
+  # MAPE <- function(z, zhat) {
+  #   z <- as.matrix(z)
+  #   zhat <- as.matrix(zhat)
+  #   x <- abs(c(zhat - z))/z
+  #   u <- x[!is.na(x)]
+  #   u <- u[!is.infinite(u)]
+  #   round(sum(u)/length(u) * 100, n)
+  # }
   BIAS <- function(z, zhat) {
     z <- as.matrix(z)
     zhat <- as.matrix(zhat)
@@ -502,22 +521,22 @@ evaluatePredictions <- function (z, zhat, n=3)
     u <- x[!is.na(x)]
     round(sum(u)/length(u), n)
   }
-  rBIAS <- function(z, zhat) {
-    z <- as.matrix(z)
-    zhat <- as.matrix(zhat)
-    x <- c(zhat - z)
-    u <- x[!is.na(x)]
-    round(sum(u)/(length(u) * mean(z, na.rm = TRUE)), n)
-  }
-  rMSEP <- function(z, zhat) {
-    z <- as.matrix(z)
-    zhat <- as.matrix(zhat)
-    x <- c(zhat - z)
-    u <- x[!is.na(x)]
-    y <- c(mean(zhat, na.rm = TRUE) - z)
-    v <- y[!is.na(y)]
-    round(sum(u^2)/sum(v^2), n)
-  }
+  # rBIAS <- function(z, zhat) {
+  #   z <- as.matrix(z)
+  #   zhat <- as.matrix(zhat)
+  #   x <- c(zhat - z)
+  #   u <- x[!is.na(x)]
+  #   round(sum(u)/(length(u) * mean(z, na.rm = TRUE)), n)
+  # }
+  # rMSEP <- function(z, zhat) {
+  #   z <- as.matrix(z)
+  #   zhat <- as.matrix(zhat)
+  #   x <- c(zhat - z)
+  #   u <- x[!is.na(x)]
+  #   y <- c(mean(zhat, na.rm = TRUE) - z)
+  #   v <- y[!is.na(y)]
+  #   round(sum(u^2)/sum(v^2), n)
+  # }
   r2 <- function(z, zhat) {
     a <- cor(z,zhat,use="pairwise.complete.obs")^2
     round(a, n)
@@ -527,10 +546,10 @@ evaluatePredictions <- function (z, zhat, n=3)
   out$MSE <- VMSE(c(z), c(zhat))
   out$RMSE <- RMSE(c(z), c(zhat))
   out$MAE <- MAE(c(z), c(zhat))
-  out$MAPE <- MAPE(c(z), c(zhat))
+  # out$MAPE <- MAPE(c(z), c(zhat))
   out$BIAS <- BIAS(c(z), c(zhat))
-  out$rBIAS <- rBIAS(c(z), c(zhat))
-  out$rMSEP <- rMSEP(c(z), c(zhat))
+  # out$rBIAS <- rBIAS(c(z), c(zhat))
+  # out$rMSEP <- rMSEP(c(z), c(zhat))
   out$r2 <- r2(c(z), c(zhat))
   out <- unlist(out)
   return(round(out, digits=n))
@@ -669,28 +688,37 @@ plotStations <- function(paper=T, IDS, fileName, width, height, redIds=NA, fill=
 
 ## Assemble STFDF 
 assembleSTFDF <- function(epa){
+  epa$Station.Code2 <- epa$Station.Code
   ## Space dimension
   epa.sp <- getSites(epa)
-  epa.sp <- epa.sp[,c("Station.Code","Latitude","Longitude","Location.Setting","UTM.X","UTM.Y")]
+  epa.sp <- epa.sp[order(epa.sp$Station.Code),c("Station.Code","Latitude","Longitude","Location.Setting","UTM.X","UTM.Y")]
   rownames(epa.sp) <- epa.sp$Station.Code
-  head(epa.sp)
+  #head(epa.sp)
   coordinates(epa.sp) <- ~UTM.X+UTM.Y
   proj4string(epa.sp) <- getUTMproj()
   
   ## Time dimension
   epa.tm <- sort(unique(epa$Date))
   epa.tm <- as.Date(epa.tm)  ## Ignore time data?? >> Corrects x labels problem in acf
+  #head(epa.tm)
   
   ## Data
-  epa_2 <- epa[,c("Date","Ozone","sOzone","Temperature",
-                  "RH","Rain","logRain","Wind","sqrtWind","Elevation")]
+  epa_2 <- epa[order(epa$Date,epa$Station.Code),c("Station.Code2","Date","Ozone","sOzone","sOzone.trend","sOzone.res","Temperature","RH","logRain",
+    "sqrtWind","Dew.Point","Water.Evap","Geop.Height",
+    "Geop.Height.Tropo","Lat.Heat.Flux","Tropo.Press",
+    "Press.MSL","Vegetation", "Elevation")]
   ## TODO: Sort?
+  head(epa_2)
   
   # Combine the objects spatial, data-frame and time-dim into a STIDF:
   epa.st <- STFDF(epa.sp,epa.tm,epa_2) 
   # summary(epa.st)
   # stplot(epa.st[,"2016-01-01::2016-01-08","sOzone"])
   # dim(epa.st)
+  tmp <- as.data.frame(epa.st)
+  # head(tmp)
+  # sum(as.character(tmp$sp.ID)!=as.character(tmp$Station.Code2))
+  # sum(tmp$time!=as.Date(tmp$Date))
 
   return(epa.st)  
 }
@@ -708,7 +736,7 @@ getMetricsByStation <- function(epa.st,colName1,colName2){
 }
 
 ## Function to get the goodness-of-fit metrics by station (from a data.frame) 
-getMetricsByStationFromDF <- function(epa,colName1,colName2){
+getMetricsByStationFromDF <- function(epa,colName1="sOzone",colName2="sOzoneH"){
   metrics = c()
   for(s in unique(epa$Station.Code)){
     m <- evaluatePredictions(epa[epa$Station.Code==s,colName1], 
@@ -717,4 +745,39 @@ getMetricsByStationFromDF <- function(epa,colName1,colName2){
     rownames(metrics)[nrow(metrics)] <- as.character(as.character(s))
   }
   return(metrics)
+}
+
+
+## Detrend sOzone using a linear model
+detrend_scaled_ozone_lm <- function(epa){
+  fm <- sOzone ~ Temperature+RH+logRain+sqrtWind+Dew.Point+Water.Evap+
+    Geop.Height+Geop.Height.Tropo+Lat.Heat.Flux+
+    Tropo.Press+Press.MSL+Vegetation+Longitude+Latitude+Elevation+
+    Location.Setting+Doy+Dow.name+Month+Day
+  lmModel <- lm(fm, data=epa)
+  epa$sOzone.trend <- predict(lmModel,epa)
+  epa$sOzone.res <- epa$sOzone-epa$sOzone.trend
+
+  return(epa)
+}
+
+## Detrend sOzone using a 4th order polynomial trend
+detrend_scaled_ozone_poly <- function(epa, debug=F){
+  epa$sOzone.trend <- NA
+  epa$sOzone.res <- NA
+  for(s in unique(epa$Station.Code)){
+    #print(s)
+    epa.test <- epa[epa$Station.Code==s,]
+    model <- lm(sOzone ~ poly(Doy0,4), epa.test) 
+    epa.test$sOzone.trend <- predict(model,epa.test)
+    epa.test$sOzone.res <- epa.test$sOzone-epa.test$sOzone.trend
+    epa[epa$Station.Code==s,c("sOzone.trend","sOzone.res")] <- epa.test[,c("sOzone.trend","sOzone.res")]
+    if(debug){
+      plot(sOzone~Doy0,epa.test,type="l")
+      lines(sOzone.trend~Doy0,epa.test,col=2)
+      lines(sOzone.res~Doy0,epa.test,col=3)
+      #readline("Continue?")
+    }
+  }
+  return(epa)
 }

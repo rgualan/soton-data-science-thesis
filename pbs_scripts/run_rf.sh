@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l nodes=1:ppn=2
+#PBS -l nodes=1:ppn=12
 #PBS -l walltime=24:00:00
 cd ~/aq-tngapms/
 module load R

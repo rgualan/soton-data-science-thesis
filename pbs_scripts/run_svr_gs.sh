@@ -3,5 +3,5 @@
 #PBS -l walltime=12:00:00
 cd ~/aq-tngapms/
 module load R
-R --vanilla < model/spTimer/bayes_lm_conjugate_epa_ca.R &> logs/bayeslmconj.log
+R --vanilla < model/ml/svr_gs.R &> logs/svr_gs.log
 
