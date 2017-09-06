@@ -11,7 +11,7 @@ source("util/my_helper.R")
 paper = setupPaper()
 
 ## Read data #######################################################################
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
+epa <- readEpaDataset()
 epa <- addDateDerivedFeatures(epa)
 epa <- addNeighboursAverage(epa,5)
 epa <- transformFeatures(epa)
@@ -35,10 +35,9 @@ fm <- sOzone ~ Temperature+Dew.Point+Water.Evap+
 
 ## 10-fold cross validation #################################################################################
 folds <- getFolds()
-metrics = c()
 
 cl <- makeCluster(11, outfile="")
-clusterExport(cl, c("epa","sites","paper","fm","metrics"))
+clusterExport(cl, c("epa","sites","paper","fm"))
 tryCatch({
   out <- clusterApply(cl, 1:10, function(k){
     library(randomForest)
@@ -55,7 +54,14 @@ tryCatch({
     ## Fit model
     ticToc({
       rf.fit <- randomForest(fm, epa.train[!is.na(epa.train$sOzone),], importance=TRUE)
-      #saveRDS(rf.fit,paste0("output/RF/rf.fit.",k,".RDS"))
+      if(k==1){
+        saveRDS(rf.fit,paste0("output/RF/rf.fit.",k,".RDS"))       
+        rf.fit <- readRDS(paste0("output/RF/rf.fit.",1,".RDS"))       
+        printPlot(paper,"img/rf/rf_importance.jpeg",7,4,FUN=function(){
+          par(mar=c(0, 0, 0, 0))
+          varImpPlot(rf.fit, main="", bg="blue", pch=22)
+        })
+      }
     })
     
     ## Prediction
@@ -64,7 +70,7 @@ tryCatch({
     
     m <- evaluatePredictions(epa.test$sOzone, epa.test$sOzoneH)
     print(sprintf("Fold-%d. Metrics:",k))
-    print (m)
+    print (round(m,2))
 
     return(epa.test)
   })
@@ -78,14 +84,14 @@ tryCatch({
 ## Save results
 ## Data frame with the OOS predictions
 epa.out <- do.call("rbind", out)
-saveRDS(epa.out, "output/RF/rfp.out.RDS")
-#out <- readRDS("output/RF/rfp.out.RDS")
+saveRDS(epa.out, "output/RF/rf.out.RDS")
+#out <- readRDS("output/RF/rf.out.RDS")
 
 ## Overall metrics
 print(evaluatePredictions(epa.out$sOzone,epa.out$sOzoneH))
 
 ## Metrics
 metrics <- getMetricsByStationFromDF(epa.out,"sOzone","sOzoneH")
-saveRDS(metrics, "output/RF/rfp.metrics.RDS")
+saveRDS(metrics, "output/RF/rf.metrics.RDS")
 
 print("Done!")
