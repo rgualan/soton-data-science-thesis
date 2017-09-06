@@ -5,7 +5,7 @@ rm(list=ls())
 source("util/my_helper.R")
 
 ## Read data ########################################################################
-epa <- readRDS("data/epa/epa_daily/2016/california_ozone_plus_rcov_3.RDS")
+epa <- readEpaDataset()
 epa <- addDateDerivedFeatures(epa)
 epa <- addNeighboursAverage(epa,5)
 epa <- transformFeatures(epa)

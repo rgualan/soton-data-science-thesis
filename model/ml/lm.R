@@ -25,11 +25,11 @@ epa.test <- epa[epa$Station.Code %in% sites$Station.Code[folds==1],]
 
 ## Linear model A ###################################################################
 ## Withouth including a neighbor combination
-fm <- sOzone ~ Temperature+RH+logRain+sqrtWind+Dew.Point+Water.Evaporation+
-  Geopotential.Height+Geopotential.Height.Tropo+Latent.Heat.FLux+ #Heat.Flux
-  Tropopause.Press+Press.MSL+Vegetation+Longitude+Latitude+Elevation+
+fmA <- sOzone ~ Temperature+RH+logRain+sqrtWind+Dew.Point+Water.Evap+
+  Geop.Height+Geop.Height.Tropo+Lat.Heat.Flux+ #Heat.Flux
+  Tropo.Press+Press.MSL+Vegetation+Longitude+Latitude+Elevation+
   Location.Setting+Doy+Dow.name+Month+Day
-lmModelA <- lm(fm, data=epa.train)
+lmModelA <- lm(fmA, data=epa.train)
 summary(lmModelA)
 #plot(lmModel)
 
@@ -37,17 +37,22 @@ epa.test$sOzoneH <- predict(lmModelA, epa.test)
 (ma <- evaluatePredictions(epa.test$sOzone, epa.test$sOzoneH))
 plot(epa.test$sOzone,type="l"); lines(epa.test$sOzoneH,col=2)
 
+epa.test$sOzoneRes <- epa.test$sOzone - epa.test$sOzoneH
+plot(epa.test$sOzoneRes,type="l")
+hist(epa.test$sOzoneRes)
+
+
 ## Linear model B ###################################################################
 ## Including a neighbor combination
 # fm <- sOzone ~ Temperature+RH+logRain+sqrtWind+Dew.Point+Water.Evaporation+
 #   Geopotential.Height+Geopotential.Height.Tropo+Latent.Heat.FLux+ #Heat.Flux
 #   Tropopause.Press+Press.MSL+Vegetation+Longitude+Latitude+Elevation+
 #   Location.Setting+Doy+Dow.name+Month+Day+sqrtWind+logRain+Neighbor
-fm <- sOzone ~ Temperature+Dew.Point+Water.Evaporation+
-  Geopotential.Height+Geopotential.Height.Tropo+#Heat.Flux
-  Tropopause.Press+Press.MSL+Longitude+Latitude+Elevation+
-  Doy+Neighbor #Location.Setting+
-lmModelB <- lm(fm, data=epa.train)
+fmB <- sOzone ~ Temperature+Dew.Point+Water.Evap+
+  Geop.Height+Geop.Height.Tropo+#Heat.Flux
+  Tropo.Press+Press.MSL+Longitude+Latitude+Elevation+
+  Location.Setting+Doy+Neighbor
+lmModelB <- lm(fmB, data=epa.train)
 summary(lmModelB)
 #plot(lmModel)
 
@@ -62,14 +67,3 @@ rbind(ma,mb)
 
 
 
-x <- 1:366
-# Coldest day?
-# dailyTempAgg <- aggregate(Temperature~Doy,epa,mean)
-# dailyTempAgg[which.min(dailyTempAgg$Temperature),]
-# plot(Temperature~Doy, dailyTempAgg, type="l")
-cdayt <- sin((x-1)*(2*pi)/(366))
-plot(cdayt, type="l")
-
-# fit.gam <- gam(o8hrmax ~ s(cMAXTMP) + s(WDSP) + s(RH) + s(Longitude, Latitude, k = 10), 
-#   data = DataFit)
-# pred.gam <- predict(fit.gam, DataValPred, interval = "prediction")
