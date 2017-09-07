@@ -37,7 +37,7 @@ mainTable <-rbind(apply(mK1,2,mean),
                   apply(mGp,2,mean),
                   apply(mLm,2,mean),
                   apply(mRf,2,mean))
-rownames(mainTable) <- c("KSP-A","KSP-B","IDW","TPS","KST-A","KST-B","KST-C","KST-D","GP","LM","RF")
+rownames(mainTable) <- c("KSP-A","KSP-B","IDW","TPS","KST-SE","KST-PS","KST-ME","KST-SM","GP","LM","RF")
 round(mainTable,3)
 ## Latex table
 xtable(mainTable, digits = 3)
@@ -103,10 +103,10 @@ outGp$Ozone <- outGp$sOzoneH
 outLm$Ozone <- outLm$sOzoneH
 outRf$Ozone <- outRf$sOzoneH
 
-set.seed(204)
+#set.seed(204)
 #ss<-c("021-0003", "027-0101", "083-4003" ) 
-##ss <- sample(unique(outOri$Station.Code),3)
-ss <- sample(unique(outGp$Station.Code),3)
+#(ss <- sample(unique(outGp$Station.Code),3))
+ss <- c("021-0003", "071-2002", "001-0009")
 s=ss[1]
 
 cc <- c("Station.Code","Date","Ozone") # common columns
@@ -128,7 +128,7 @@ sdata <- rbind(
 for(s in ss){
   printPlot(paper, paste0("img/ts_",s,".jpeg"),7,3, FUN=function(){ 
     p<-ggplot(sdata[sdata$Station.Code==s,], aes(x=Date, y=Ozone, colour=Model)) + 
-      geom_line(lwd=0.5) + 
+      geom_line(lwd=0.4, alpha=0.4) + 
       theme(legend.justification = c("top")) + 
       labs(y="Scaled(Ozone)")+
       geom_line(data=sdata[sdata$Station.Code==s & sdata$Model=="Original",], 
@@ -142,7 +142,49 @@ for(s in ss){
 
 
 
-
-
-
-
+## Hexbin plots
+require(hexbin)
+printPlot(paper,"img/hexbin/Idw.jpeg",5,5, FUN=function(){
+  print(hexbinplot(outIdw$Ozone~outOri$Ozone, colramp = function(n){rev(heat.colors(n))}, xlab="measured",
+             ylab="predicted (IDW)"))
+})
+printPlot(paper,"img/hexbin/KspA.jpeg",5,5, FUN=function(){
+  print(hexbinplot(outK1$Ozone~outOri$Ozone, colramp = function(n){rev(heat.colors(n))}, xlab="measured",
+           ylab="predicted (KSP-A)"))
+})
+printPlot(paper,"img/hexbin/KspB.jpeg",5,5, FUN=function(){
+  print(hexbinplot(outK2$Ozone~outOri$Ozone, colramp = function(n){rev(heat.colors(n))}, xlab="measured",
+           ylab="predicted (KSP-B)"))
+})
+printPlot(paper,"img/hexbin/Tps.jpeg",5,5, FUN=function(){
+  print(hexbinplot(outTps$Ozone~outOri$Ozone, colramp = function(n){rev(heat.colors(n))}, xlab="measured",
+           ylab="predicted (TPS)"))
+})
+printPlot(paper,"img/hexbin/KstA.jpeg",5,5, FUN=function(){
+  print(hexbinplot(outSTK1$Ozone~outOri$Ozone, colramp = function(n){rev(heat.colors(n))}, xlab="measured",
+           ylab="predicted (KST-SE)"))
+})
+printPlot(paper,"img/hexbin/KstB.jpeg",5,5, FUN=function(){
+  print(hexbinplot(outSTK2$Ozone~outOri$Ozone, colramp = function(n){rev(heat.colors(n))}, xlab="measured",
+           ylab="predicted (KST-PS)"))
+})
+printPlot(paper,"img/hexbin/KstC.jpeg",5,5, FUN=function(){
+  print(hexbinplot(outSTK3$Ozone~outOri$Ozone, colramp = function(n){rev(heat.colors(n))}, xlab="measured",
+           ylab="predicted (KST-ME)"))
+})
+printPlot(paper,"img/hexbin/KstD.jpeg",5,5, FUN=function(){
+  print(hexbinplot(outSTK4$Ozone~outOri$Ozone, colramp = function(n){rev(heat.colors(n))}, xlab="measured",
+           ylab="predicted (KST-SM)"))
+})
+printPlot(paper,"img/hexbin/Gp.jpeg",5,5, FUN=function(){
+  print(hexbinplot(outGp$Ozone~outOri$Ozone, colramp = function(n){rev(heat.colors(n))}, xlab="measured",
+           ylab="predicted (GP)"))
+})
+printPlot(paper,"img/hexbin/Lm.jpeg",5,5, FUN=function(){
+  print(hexbinplot(outLm$Ozone~outOri$Ozone, colramp = function(n){rev(heat.colors(n))}, xlab="measured",
+           ylab="predicted (LM)"))
+})
+printPlot(paper,"img/hexbin/Rf.jpeg",5,5, FUN=function(){
+  print(hexbinplot(sOzone~sOzoneH, data=outRf, colramp = function(n){rev(heat.colors(n))}, xlab="measured",
+           ylab="predicted (RF)"))
+})

@@ -253,6 +253,7 @@ if(paper){
   }
   ## Plot
   printPlot(paper,"img/eda/correlation_vs_distance_200_ozone.jpeg",5,5,FUN=function(){
+    par(mar=c(4.5,4,1,1))
     plot(Correlation~Distance,r2, ylab="Correlation", xlab="Distance (Km)")
   })
   printPlot(paper,"img/eda/correlation_vs_distance_50_ozone.jpeg",5,5,FUN=function(){
