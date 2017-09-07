@@ -19,7 +19,7 @@ library(openair)
 
 ## Stations ###################################################################
 ## Read data
-aurn <- read.table("data/aurn/AURN_data_07_11.txt",header=T)
+aurn <- read.table("/home/ronald/projects/back_up/data/aurn/AURN_data_07_11.txt",header=T)
 aurn$date <- as.POSIXct(sprintf("%04d-%02d-%02d", aurn$year,aurn$month,aurn$day),tz="GMT")
 names(aurn)[1] <- "site"
 aurn$site <- as.factor(aurn$site)
@@ -43,7 +43,7 @@ legend("topright",legend=unique(sites$type), pch=2, col=unique(sites$type))
 
 ## Shapefile plus stations inside GL
 ## Ref: https://medium.com/towards-data-science/plotting-a-map-of-london-crime-data-using-r-8dcefef1c397
-shpGL <- readOGR("/home/ronald/projects/aq-tngapms/data/maps/statistical-gis-boundaries-london/ESRI", 
+shpGL <- readOGR("/home/ronald/projects/back_up/data/maps/statistical-gis-boundaries-london/ESRI", 
                  layer = "London_Borough_Excluding_MHW")
 proj4string(shpGL)
 shpGL.wgs84 <- spTransform(shpGL, CRS("+init=epsg:4326"))

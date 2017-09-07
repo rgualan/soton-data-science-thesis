@@ -7,7 +7,7 @@ library(maps)       # Provides functions that let us plot the maps
 library(mapdata)    # Contains the hi-resolution points that mark out the countries.
 
 #### UK plus stations ################################################################
-metadata <- read.delim("data/GB_AQeReporting_2013-2015/GB_2013-2015_metadata.csv", header = T)
+metadata <- read.delim("/home/ronald/projects/back_up/data/GB_AQeReporting_2013-2015/GB_2013-2015_metadata.csv", header = T)
 metadata$ObservationDateEnd <- as.POSIXct(metadata$ObservationDateEnd,
                                           format="%Y-%m-%d %H:%M:%S",tz = "UTC")
 metadata$ObservationDateBegin <- as.POSIXct(metadata$ObservationDateBegin,
@@ -67,7 +67,7 @@ par(.pardefault)
 # Time series ###############################################################
 # Read the data
 #d <- read.delim("data/GB_AQeReporting_2013-2015/GB_1_2013-2015_aggregated_timeseries_so2.csv", header = T)
-d <- read.delim("data/GB_AQeReporting_2013-2015/GB_5_2013-2015_aggregated_timeseries_pm10.csv", header = T)
+d <- read.delim("/home/ronald/projects/back_up/data/GB_AQeReporting_2013-2015/GB_5_2013-2015_aggregated_timeseries_pm10.csv", header = T)
 d <- d[d$DataAggregationProcess=="P1D",]
 str(d)
 d$date <- as.POSIXct(d$DatetimeBegin, format="%Y-%m-%d %H:%M:%S",tz="UTC")

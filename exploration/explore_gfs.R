@@ -12,12 +12,12 @@ library(ncdf4)
 
 
 # NEtcdf file
-nc <- nc_open("data/e_obs_grid/tg_0.25deg_reg_v15.0-2015-box.nc")
+nc <- nc_open("/home/ronald/projects/back_up/data/e_obs_grid/tg_0.25deg_reg_v15.0-2015-box.nc")
 print(nc)
 
 
 # read the netCDF file as a raster layer
-r <- raster("data/e_obs_grid/tg_0.25deg_reg_v15.0-2015-box.nc")
+r <- raster("/home/ronald/projects/back_up/data/e_obs_grid/tg_0.25deg_reg_v15.0-2015-box.nc")
 #r
 #print(r)
 

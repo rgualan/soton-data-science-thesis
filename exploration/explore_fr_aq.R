@@ -8,7 +8,7 @@ library(maps) # Provides functions that let us plot the maps
 library(mapdata) # Contains the hi-resolution points that mark out the countries.
 
 #### France plus stations ################################################################
-metadata <- read.delim("data/FR_AQeReporting_2013-2015/FR_2013-2015_metadata.csv", header=T)
+metadata <- read.delim("/home/ronald/projects/back_up/data/FR_AQeReporting_2013-2015/FR_2013-2015_metadata.csv", header=T)
 metadata$ObservationDateEnd <- as.POSIXct(metadata$ObservationDateEnd,
                                           format="%Y-%m-%d %H:%M:%S",tz = "UTC")
 metadata$ObservationDateBegin <- as.POSIXct(metadata$ObservationDateBegin,
@@ -87,7 +87,7 @@ points(coords[,1:2], pch = 4, col = "green", cex=0.5)
 
 # Time series ###############################################################
 # Read the data
-d <- read.delim("data/FR_AQeReporting_2013-2015/FR_5_2013-2015_aggregated_timeseries_pm10.csv", header = T)
+d <- read.delim("/home/ronald/projects/back_up/data/FR_AQeReporting_2013-2015/FR_5_2013-2015_aggregated_timeseries_pm10.csv", header = T)
 #d <- read.delim("data/FR_AQeReporting_2013-2015/FR_7_2013-2015_aggregated_timeseries_o3.csv", header = T)
 #d <- read.delim("data/FR_AQeReporting_2013-2015/FR_8_2013-2015_aggregated_timeseries_no2.csv", header = T)
 #str(d)

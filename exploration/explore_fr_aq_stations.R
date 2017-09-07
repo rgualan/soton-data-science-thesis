@@ -16,7 +16,7 @@ library(lattice) # For levelplot
 ## Relevant period: 4 months
 ## 2015-01-01 to 2015-04-30
 ## Read data
-d <- read.delim("data/FR_AQeReporting_2013-2015/FR_5_2013-2015_aggregated_timeseries_pm10.csv", header=T)
+d <- read.delim("/home/ronald/projects/back_up/data/FR_AQeReporting_2013-2015/FR_5_2013-2015_aggregated_timeseries_pm10.csv", header=T)
 d$DatetimeBegin <- as.POSIXct(d$DatetimeBegin, format="%Y-%m-%d %H:%M:%S",tz="UTC")
 d$DatetimeEnd <- as.POSIXct(d$DatetimeEnd, format="%Y-%m-%d %H:%M:%S",tz="UTC")
 length(unique(d$AirQualityStationEoICode))
@@ -38,7 +38,7 @@ minNumRecords <- 0.95*as.integer((dateB-dateA)+1)
 stations <- recordsByStation[recordsByStation$Count>minNumRecords,]
 #View(stations)
 ## Complete fields of the stations
-stations_md <- read.delim("data/FR_AQeReporting_2013-2015/FR_2013-2015_metadata.csv", header=T)
+stations_md <- read.delim("/home/ronald/projects/back_up/data/FR_AQeReporting_2013-2015/FR_2013-2015_metadata.csv", header=T)
 stations_md <- unique(stations_md[stations_md$AirPollutant=="PM10",
                                   c("AirQualityStationEoICode","Projection",
                                     "Altitude","Longitude","Latitude",
@@ -85,9 +85,9 @@ nrow(stations[stations$distanceToParis<1.5,])
 
 ## Plot map of France and the stations (coloured by type of Area)
 # zoom=6
-#mapFrance <- get_map(location = 'France', zoom = 6, maptype = "roadmap")
+mapFrance <- get_map(location = 'France', zoom = 6, maptype = "roadmap")
 #save(mapFrance, file="data/maps/mapFrance.Rdata")
-if(!exists("mapFrance")) load("data/maps/mapFrance.Rdata")
+#if(!exists("mapFrance")) load("data/maps/mapFrance.Rdata")
 
 ggmap(mapFrance) +
   geom_point(aes(x=Longitude, y=Latitude, 
@@ -107,9 +107,9 @@ ggmap(mapFrance) +
 #readline("Continue?")
 
 ## Plot map of Paris and the stations
-#mapParis <- get_map(location = 'Paris', zoom = "auto", maptype="roadmap")
+mapParis <- get_map(location = 'Paris', zoom = "auto", maptype="roadmap")
 #save(mapParis, file="data/maps/mapParis.Rdata")
-if(!exists("mapParis")) load("data/maps/mapParis.Rdata")
+#if(!exists("mapParis")) load("data/maps/mapParis.Rdata")
 
 ggmap(mapParis) +
   geom_point(aes(x=Longitude, y=Latitude, fill = AirQualityStationArea), 
@@ -120,7 +120,7 @@ ggmap(mapParis) +
 
 ## Plot map from a shapefile
 # Ref: http://www.kevjohnson.org/making-maps-in-r/
-tract <- readOGR(dsn = "data/FR_AQeReporting_2013-2015/shapefiles/regions-20170102-shp/", 
+tract <- readOGR(dsn = "/home/ronald/projects/back_up/data/FR_AQeReporting_2013-2015/shapefiles/regions-20170102-shp/", 
                  layer = "regions-20170102")
 tract <- fortify(tract, region="insee")
 

@@ -14,7 +14,7 @@ library(raster)
 
 
 ## Read data
-d <- read.csv("data/MAAQ_background/mappm102015g.csv",header=T, 
+d <- read.csv("/home/ronald/projects/back_up/data/MAAQ_background/mappm102015g.csv",header=T, 
               na.strings="MISSING", skip=5)
 #View(d)
 

@@ -12,12 +12,12 @@ library(ncdf4)
 
 
 # NEtcdf file
-nc <- nc_open("data/e_obs_grid/tg_0.25deg_reg_v15.0-2015-box.nc")
+nc <- nc_open("/home/ronald/projects/back_up/data/e_obs_grid/tg_0.25deg_reg_v15.0-2015-box.nc")
 print(nc)
 
 
 # read the netCDF file as a raster layer
-r <- raster("data/e_obs_grid/tg_0.25deg_reg_v15.0-2015-box.nc")
+r <- raster("/home/ronald/projects/back_up/data/e_obs_grid/tg_0.25deg_reg_v15.0-2015-box.nc")
 #r
 #print(r)
 
@@ -36,3 +36,4 @@ plt + layer(sp.lines(world.outlines.sp, col = "black", lwd = 0.5))
 #extract(r, matrix(c(0.125,43.875),1,2), method='bilinear', fun=mean, na.rm=TRUE)
 #extract(r, matrix(c(0.125*2,43.875+0.125),1,2), method='bilinear', fun=mean, na.rm=TRUE)
 #extract(r, matrix(c(-1.625,44.375),1,2), method='bilinear', fun=mean, na.rm=TRUE)
+

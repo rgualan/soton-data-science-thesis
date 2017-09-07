@@ -14,7 +14,7 @@ library(rgdal)
 ## Relevant period:
 ## 2015-01-01 to 2015-04-30
 ## Read data
-d <- read.delim("data/GB_AQeReporting_2013-2015/GB_5_2013-2015_aggregated_timeseries_pm10.csv", header=T)
+d <- read.delim("/home/ronald/projects/back_up/data/GB_AQeReporting_2013-2015/GB_5_2013-2015_aggregated_timeseries_pm10.csv", header=T)
 d$DatetimeBegin <- as.POSIXct(d$DatetimeBegin, format="%Y-%m-%d %H:%M:%S",tz="UTC")
 d$DatetimeEnd <- as.POSIXct(d$DatetimeEnd, format="%Y-%m-%d %H:%M:%S",tz="UTC")
 length(unique(d$AirQualityStationEoICode)) # 74 stations
@@ -48,7 +48,7 @@ minNumRecords <- 0.95*as.integer((dateB-dateA)+1)
 stations <- recordsByStation[recordsByStation$Count>minNumRecords,]
 #View(stations)
 ## Complete fields of the stations
-stations_md <- read.delim("data/GB_AQeReporting_2013-2015/GB_2013-2015_metadata.csv", header=T)
+stations_md <- read.delim("/home/ronald/projects/back_up/data/GB_AQeReporting_2013-2015/GB_2013-2015_metadata.csv", header=T)
 stations_md <- unique(stations_md[stations_md$AirPollutant=="PM10",
                                   c("AirQualityStationEoICode","Projection",
                                     "Altitude","Longitude","Latitude",
@@ -77,9 +77,9 @@ readline("continue?")
 #https://blog.dominodatalab.com/geographic-visualization-with-rs-ggmaps/
 
 ## Plot map of UK and the stations (coloured by type of Area)
-#mapGB <- get_map(location = 'Great Britain', zoom = 6, maptype = "roadmap")
+mapGB <- get_map(location = 'Great Britain', zoom = 6, maptype = "roadmap")
 #save(mapGB, file="data/maps/mapGB.Rdata")
-if(!exists("mapGB")) load("data/maps/mapGB.Rdata")
+#if(!exists("mapGB")) load("data/maps/mapGB.Rdata")
 
 ggmap(mapGB) +
   geom_point(aes(x=Longitude, y=Latitude, 

@@ -12,7 +12,7 @@ library(rgdal)
 
 ## Stations ###################################################################
 ## Read data
-load("data/kcl/sites.RData")
+load("/home/ronald/projects/back_up/data/kcl/sites.RData")
 nrow(sites) # 900
 
 ## Plot all stations
@@ -35,9 +35,9 @@ readline("Continue?")
 ## https://blog.dominodatalab.com/geographic-visualization-with-rs-ggmaps/
 
 ## Plot map of London
-#mapLondon <- get_map(location = 'London', zoom = "auto", maptype = "roadmap")
+mapLondon <- get_map(location = 'London', zoom = "auto", maptype = "roadmap")
 #save(mapLondon, file="data/maps/mapLondon.Rdata")
-if(!exists("mapLondon")) load("data/maps/mapLondon.Rdata")
+#if(!exists("mapLondon")) load("data/maps/mapLondon.Rdata")
 
 ggmap(mapLondon) +
   geom_point(aes(x=Longitude, y=Latitude, 
@@ -53,7 +53,7 @@ nrow(sites3)
 
 
 ## Explore meteorological dataset
-load("data/kcl/metData.RData")
+load("/home/ronald/projects/back_up/data/kcl/metData.RData")
 met2 <- met[met$date>=dateA & met$date<=dateB,]
 nrow(met2)
 #View(met2)
@@ -69,7 +69,7 @@ if(createCompact){
   variables <- c("site","date","nox","no2","so2","pm10_raw","pm10","pm25","o3","co","co2")
   variables2 <- c("site","date","Latitude","Longitude","Classification","nox","no2","so2","pm10_raw","pm10","pm25","o3","co","co2")
   
-  files <- list.files("data/kcl/2015")
+  files <- list.files("/home/ronald/projects/back_up/data/kcl/2015")
   for(f in files){
     print(f)
     load(paste0("data/kcl/2015/",f))
@@ -111,7 +111,7 @@ if(createCompact){
 }
 
 
-load("data/kcl/compact2015.RData")
+load("/home/ronald/projects/back_up/data/kcl/compact2015.RData")
 d <- compact
 
 
